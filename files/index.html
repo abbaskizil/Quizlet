@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyForge</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0e0e10;
+    --surface:   #16161a;
+    --surface2:  #1e1e24;
+    --border:    #2a2a32;
+    --accent:    #c8f060;
+    --accent2:   #7b61ff;
+    --text:      #e8e8f0;
+    --muted:     #6e6e82;
+    --danger:    #ff5f6d;
+    --success:   #3ddc84;
+    --radius:    14px;
+    --serif:     'Instrument Serif', serif;
+    --mono:      'DM Mono', monospace;
+    --sans:      'Outfit', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ─── LAYOUT ─── */
+  #app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo h1 {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-style: italic;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+  }
+  .sidebar-logo p { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+
+  .sidebar-section-label {
+    padding: 16px 20px 8px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  #profile-panel {
+    padding: 14px 16px 0;
+  }
+  .profile-card {
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .profile-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .profile-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent2), #2a1d8f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .profile-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .profile-handle {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 4px;
+  }
+  .profile-sub {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 10px;
+  }
+  .profile-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .profile-actions .btn-sidebar-secondary,
+  .profile-actions .btn-primary {
+    width: 100%;
+  }
+
+  #deck-list { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
+  .deck-item {
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+  }
+  .deck-item:hover { background: var(--surface2); }
+  .deck-item.active { background: var(--surface2); border: 1px solid var(--border); }
+  .deck-item .deck-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent2), #4a3fcc);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .deck-item .deck-info { overflow: hidden; }
+  .deck-item .deck-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .deck-item .deck-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .deck-item .delete-deck {
+    margin-left: auto; opacity: 0; background: none; border: none;
+    color: var(--danger); cursor: pointer; font-size: 16px; padding: 2px 4px;
+    border-radius: 4px; flex-shrink: 0; transition: opacity 0.15s;
+  }
+  .deck-item:hover .delete-deck { opacity: 1; }
+
+  .sidebar-bottom {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .sidebar-tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .sidebar-status {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .btn-upload-sidebar {
+    width: 100%; padding: 10px; border-radius: 10px;
+    background: var(--accent); color: #0e0e10;
+    border: none; font-family: var(--sans); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-upload-sidebar:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-sidebar-secondary {
+    width: 100%; padding: 10px; border-radius: 10px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); font-family: var(--sans); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: border-color 0.15s, color 0.15s, transform 0.1s;
+  }
+  .btn-sidebar-secondary:hover { border-color: var(--accent2); color: var(--text); transform: translateY(-1px); }
+
+  /* ─── MAIN AREA ─── */
+  #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ─── TOPBAR ─── */
+  #topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface);
+  }
+  #topbar h2 { font-family: var(--serif); font-size: 20px; font-style: italic; flex: 1; }
+  #topbar .tab-btn {
+    padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.15s; font-family: var(--sans);
+  }
+  #topbar .tab-btn.active { background: var(--accent); color: #0e0e10; border-color: var(--accent); }
+  #topbar .tab-btn:not(.active):hover { color: var(--text); border-color: var(--muted); }
+
+  /* ─── CONTENT ─── */
+  #content { flex: 1; overflow-y: auto; padding: 28px; }
+
+  /* ─── WELCOME / UPLOAD SCREEN ─── */
+  #welcome {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; gap: 24px; text-align: center;
+  }
+  .welcome-icon {
+    width: 80px; height: 80px; border-radius: 20px;
+    background: linear-gradient(135deg, var(--accent2), #2a1d8f);
+    display: flex; align-items: center; justify-content: center; font-size: 36px;
+  }
+  #welcome h2 { font-family: var(--serif); font-size: 32px; font-style: italic; }
+  #welcome p { color: var(--muted); max-width: 340px; line-height: 1.6; font-size: 15px; }
+
+  .drop-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 40px 60px; cursor: pointer; transition: all 0.2s;
+    max-width: 480px; width: 100%;
+  }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(200,240,96,0.04); }
+  .drop-zone p { color: var(--muted); font-size: 14px; }
+  .drop-zone strong { color: var(--accent); }
+  #file-input { display: none; }
+
+  /* ─── GENERATION MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100; backdrop-filter: blur(4px);
+  }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; width: 420px; max-width: 95vw;
+  }
+  .modal h3 { font-family: var(--serif); font-size: 22px; font-style: italic; margin-bottom: 6px; }
+  .modal .modal-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; font-family: var(--mono); }
+
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 12px; font-family: var(--mono); color: var(--muted); margin-bottom: 8px; letter-spacing: 0.5px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 10px 14px; border-radius: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--accent2); }
+  .form-group input[type="range"] { padding: 6px 0; background: transparent; border: none; cursor: pointer; }
+  .range-value { font-family: var(--mono); color: var(--accent); font-size: 14px; float: right; }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .auth-switch {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .auth-switch button {
+    border-radius: 10px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .auth-switch button.active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--accent2);
+  }
+  .avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .avatar-option {
+    height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .avatar-option.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+  }
+  .auth-register-only {
+    display: none;
+  }
+  .auth-register-only.show {
+    display: block;
+  }
+  .btn-primary {
+    flex: 1; padding: 12px; border-radius: 10px; font-family: var(--sans);
+    font-size: 14px; font-weight: 600; cursor: pointer; border: none;
+    background: var(--accent); color: #0e0e10; transition: opacity 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary {
+    padding: 12px 20px; border-radius: 10px; font-family: var(--sans);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    transition: all 0.15s;
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+  /* ─── LOADING ─── */
+  .loading-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%; gap: 16px;
+  }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-state p { color: var(--muted); font-size: 14px; font-family: var(--mono); }
+
+  /* ─── FLASHCARDS ─── */
+  .deck-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .deck-header h3 { font-family: var(--serif); font-size: 24px; font-style: italic; }
+  .deck-stats { display: flex; gap: 16px; }
+  .stat-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px;
+    font-family: var(--mono); border: 1px solid var(--border); color: var(--muted);
+  }
+  .stat-chip.green { border-color: var(--success); color: var(--success); }
+  .stat-chip.red { border-color: var(--danger); color: var(--danger); }
+
+  .cards-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+
+  .flashcard {
+    perspective: 1000px; height: 230px; cursor: pointer;
+  }
+  .flashcard-inner {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; border-radius: var(--radius);
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; padding: 20px;
+    border: 1px solid var(--border); transition: border-color 0.2s;
+  }
+  .card-face.front { background: var(--surface2); }
+  .card-face.back { background: var(--surface); transform: rotateY(180deg); }
+  .flashcard:hover .card-face { border-color: var(--accent2); }
+
+  .card-label {
+    font-size: 10px; font-family: var(--mono); color: var(--muted);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .card-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 10px;
+    font-family: var(--mono);
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    width: fit-content;
+  }
+  .card-meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .card-translate-btn {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 10px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .card-translate-btn:hover {
+    border-color: var(--accent2);
+    color: var(--text);
+    background: rgba(123,97,255,0.08);
+  }
+  .card-term { font-family: var(--serif); font-size: 22px; font-style: italic; line-height: 1.5; flex: 1; }
+  .card-def {
+    font-size: 15px;
+    color: #c7c7d4;
+    line-height: 1.8;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .card-flip-hint { font-size: 10px; color: var(--border); font-family: var(--mono); margin-top: auto; }
+
+  .card-sr-badges { display: flex; gap: 6px; margin-top: 12px; }
+  .sr-btn {
+    flex: 1; padding: 6px; border-radius: 8px; font-size: 11px; font-family: var(--mono);
+    border: 1px solid var(--border); background: transparent; cursor: pointer;
+    transition: all 0.15s; color: var(--muted);
+  }
+  .sr-btn:hover.easy { background: rgba(61,220,132,0.15); border-color: var(--success); color: var(--success); }
+  .sr-btn:hover.hard { background: rgba(255,95,109,0.15); border-color: var(--danger); color: var(--danger); }
+  .sr-btn.easy.selected { background: rgba(61,220,132,0.2); border-color: var(--success); color: var(--success); }
+  .sr-btn.hard.selected { background: rgba(255,95,109,0.2); border-color: var(--danger); color: var(--danger); }
+
+  .regen-btn {
+    padding: 8px 16px; border-radius: 10px; font-size: 12px; font-family: var(--mono);
+    border: 1px solid var(--border); background: transparent; color: var(--muted);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .regen-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* ─── QUIZ ─── */
+  .quiz-container { max-width: 720px; margin: 0 auto; }
+  .quiz-progress-bar {
+    height: 4px; background: var(--surface2); border-radius: 2px; margin-bottom: 32px; overflow: hidden;
+  }
+  .quiz-progress-fill {
+    height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s ease;
+  }
+
+  .question-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px; margin-bottom: 20px;
+  }
+  .q-meta { font-size: 11px; font-family: var(--mono); color: var(--muted); margin-bottom: 16px; }
+  .q-text { font-family: var(--serif); font-size: 22px; font-style: italic; line-height: 1.45; margin-bottom: 28px; }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    padding: 14px 18px; border-radius: 12px; text-align: left; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.4;
+    transition: all 0.15s; display: flex; align-items: center; gap: 12px;
+  }
+  .choice-btn:not(.answered):hover { border-color: var(--accent2); background: rgba(123,97,255,0.08); }
+  .choice-btn.correct { border-color: var(--success); background: rgba(61,220,132,0.1); color: var(--success); }
+  .choice-btn.wrong { border-color: var(--danger); background: rgba(255,95,109,0.1); color: var(--danger); }
+  .choice-btn .choice-letter {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; flex-shrink: 0; transition: all 0.15s;
+  }
+
+  .fill-input {
+    width: 100%; padding: 12px 16px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .fill-input:focus { border-color: var(--accent2); }
+  .fill-input.correct { border-color: var(--success); }
+  .fill-input.wrong { border-color: var(--danger); }
+
+  .feedback-row {
+    margin-top: 14px; padding: 12px 16px; border-radius: 10px;
+    font-size: 13px; line-height: 1.5; display: none;
+  }
+  .feedback-row.correct { background: rgba(61,220,132,0.1); color: var(--success); display: block; }
+  .feedback-row.wrong { background: rgba(255,95,109,0.1); color: var(--danger); display: block; }
+
+  .quiz-nav { display: flex; justify-content: flex-end; margin-top: 20px; gap: 10px; }
+  .btn-next {
+    padding: 12px 28px; border-radius: 12px;
+    background: var(--accent); color: #0e0e10;
+    border: none; font-family: var(--sans); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.15s; display: none;
+  }
+  .btn-next:hover { opacity: 0.85; }
+
+  /* ─── QUIZ RESULTS ─── */
+  .results-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 24px; padding: 48px; text-align: center; max-width: 520px; margin: 0 auto;
+  }
+  .results-score { font-family: var(--serif); font-size: 72px; font-style: italic; color: var(--accent); line-height: 1; }
+  .results-label { color: var(--muted); font-size: 14px; margin-top: 8px; font-family: var(--mono); }
+  .results-breakdown {
+    display: flex; gap: 16px; margin: 28px 0; justify-content: center;
+  }
+  .breakdown-item { text-align: center; }
+  .breakdown-num { font-size: 28px; font-weight: 600; font-family: var(--mono); }
+  .breakdown-lbl { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 2px; }
+  .results-actions { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted); font-size: 14px; line-height: 1.8;
+  }
+  .empty-state .emoji { font-size: 40px; margin-bottom: 12px; }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 12px 20px; border-radius: 12px; font-size: 13px;
+    opacity: 0; transform: translateY(8px);
+    transition: all 0.25s; z-index: 200; pointer-events: none;
+    max-width: 300px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+
+  @media (max-width: 1180px) {
+    .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  @media (max-width: 760px) {
+    .cards-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <h1>StudyForge</h1>
+      <p>AI-powered study tool</p>
+    </div>
+    <div id="profile-panel"></div>
+    <div class="sidebar-section-label">Your Decks</div>
+    <div id="deck-list"></div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-tools">
+        <button class="btn-upload-sidebar" onclick="openUploadModal()">
+          <span>＋</span> New Deck from PDF
+        </button>
+        <button class="btn-sidebar-secondary" onclick="openImportDeckPicker()">Import Deck JSON</button>
+        <button class="btn-sidebar-secondary" onclick="exportActiveDeck()">Export Active Deck</button>
+      </div>
+      <div class="sidebar-status" id="sync-status">Sign in required</div>
+      <input type="file" id="import-deck-input" accept=".json,application/json" style="display:none;" onchange="importDeckFile(this.files[0]); this.value='';"/>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <div id="topbar">
+      <h2 id="deck-title">Welcome</h2>
+      <div id="tab-buttons" style="display:none;">
+        <button class="tab-btn active" onclick="switchTab('flashcards')">Flashcards</button>
+        <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
+      </div>
+    </div>
+    <div id="content">
+      <div id="welcome">
+        <div class="welcome-icon">📚</div>
+        <h2>Start studying smarter</h2>
+        <p>Upload a PDF to automatically generate flashcards and quizzes powered by Gemini through your private backend.</p>
+        <button class="btn-upload-sidebar" style="max-width:240px;" onclick="openUploadModal()">
+          <span>＋</span> Upload your first PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal" style="display:none;">
+  <div class="modal">
+    <h3 id="auth-title">Welcome Back</h3>
+    <p class="modal-sub" id="auth-sub">Sign in to sync your decks to your profile.</p>
+    <div class="auth-switch">
+      <button id="auth-tab-login" class="active" onclick="setAuthMode('login')">Sign In</button>
+      <button id="auth-tab-register" onclick="setAuthMode('register')">Create Account</button>
+    </div>
+
+    <div class="form-group auth-register-only" id="auth-first-name-wrap">
+      <label>NAME</label>
+      <input type="text" id="auth-first-name" placeholder="First name"/>
+    </div>
+    <div class="form-group auth-register-only" id="auth-last-name-wrap">
+      <label>SURNAME</label>
+      <input type="text" id="auth-last-name" placeholder="Surname"/>
+    </div>
+    <div class="form-group">
+      <label>USERNAME</label>
+      <input type="text" id="auth-username" placeholder="lowercase_username"/>
+    </div>
+    <div class="form-group auth-register-only" id="auth-nickname-wrap">
+      <label>NICKNAME (OPTIONAL)</label>
+      <input type="text" id="auth-nickname" placeholder="What friends should see"/>
+    </div>
+    <div class="form-group auth-register-only" id="auth-avatar-wrap">
+      <label>PROFILE ICON</label>
+      <div class="avatar-grid" id="avatar-grid"></div>
+    </div>
+    <div class="form-group">
+      <label>PASSWORD</label>
+      <input type="password" id="auth-password" placeholder="At least 6 characters"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAuthModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAuth()" id="auth-submit-btn">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- UPLOAD / CONFIG MODAL -->
+<div class="modal-overlay" id="upload-modal" style="display:none;">
+  <div class="modal">
+    <h3>New Study Deck</h3>
+    <p class="modal-sub">Upload a PDF and configure generation</p>
+
+    <div class="form-group">
+      <label>PDF FILE</label>
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+        <p id="drop-text"><strong>Click or drag</strong> a PDF here</p>
+      </div>
+      <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this.files[0])"/>
+    </div>
+
+    <div class="form-group">
+      <label>DECK NAME</label>
+      <input type="text" id="deck-name-input" placeholder="e.g. Biology Chapter 3"/>
+    </div>
+
+    <div class="form-group">
+      <label>FLASHCARDS TO GENERATE <span class="range-value" id="fc-count-val">20</span></label>
+      <input type="range" id="fc-count" min="5" max="60" value="20"
+        oninput="document.getElementById('fc-count-val').textContent = this.value"/>
+    </div>
+
+    <div class="form-group">
+      <label>QUIZ QUESTIONS <span class="range-value" id="qq-count-val">15</span></label>
+      <input type="range" id="qq-count" min="5" max="40" value="15"
+        oninput="document.getElementById('qq-count-val').textContent = this.value"/>
+    </div>
+
+    <div class="form-group">
+      <label>ANSWER CHOICES PER QUESTION</label>
+      <select id="choice-count">
+        <option value="2">2 choices (True / False style)</option>
+        <option value="3">3 choices</option>
+        <option value="4" selected>4 choices (classic MCQ)</option>
+        <option value="5">5 choices</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>QUIZ QUESTION TYPES</label>
+      <select id="q-types">
+        <option value="mixed">Mixed (MCQ + Fill-in-the-blank)</option>
+        <option value="mcq">Multiple Choice only</option>
+        <option value="fill">Fill-in-the-blank only</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeUploadModal()">Cancel</button>
+      <button class="btn-primary" id="generate-btn" onclick="startGeneration()" disabled>
+        Generate ✦
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- REGEN MODAL -->
+<div class="modal-overlay" id="regen-modal" style="display:none;">
+  <div class="modal">
+    <h3>Regenerate Content</h3>
+    <p class="modal-sub" id="regen-modal-sub">Choose what to regenerate for this deck</p>
+    <div class="form-group">
+      <label>WHAT TO REGENERATE</label>
+      <select id="regen-type">
+        <option value="both">Flashcards + Quiz</option>
+        <option value="flashcards">Flashcards only</option>
+        <option value="quiz">Quiz only</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>FLASHCARDS <span class="range-value" id="regen-fc-val">20</span></label>
+      <input type="range" id="regen-fc-count" min="5" max="60" value="20"
+        oninput="document.getElementById('regen-fc-val').textContent = this.value"/>
+    </div>
+    <div class="form-group">
+      <label>QUIZ QUESTIONS <span class="range-value" id="regen-qq-val">15</span></label>
+      <input type="range" id="regen-qq-count" min="5" max="40" value="15"
+        oninput="document.getElementById('regen-qq-val').textContent = this.value"/>
+    </div>
+    <div class="form-group">
+      <label>ANSWER CHOICES</label>
+      <select id="regen-choice-count">
+        <option value="2">2 choices</option>
+        <option value="3">3 choices</option>
+        <option value="4" selected>4 choices</option>
+        <option value="5">5 choices</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>QUESTION TYPES</label>
+      <select id="regen-q-types">
+        <option value="mixed">Mixed</option>
+        <option value="mcq">MCQ only</option>
+        <option value="fill">Fill-in-the-blank only</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeRegenModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmRegen()">Regenerate ✦</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const PROFILE_AVATARS = ['🦊', '🦉', '🐼', '🐯', '🐬', '🦁', '🐻', '🦄', '🐙', '🐧'];
+
+// ─── STATE ───────────────────────────────────────────────────────
+let state = {
+  decks: {},       // { id: { id, name, text, pages, flashcards, quiz, quizConfig, srData } }
+  activeDeck: null,
+  activeTab: 'flashcards',
+  quizState: null,
+  cardLanguage: {},
+  cardFlipped: {},
+  user: null,
+  authMode: 'login',
+};
+
+let pendingFile = null;
+let pendingRegenDeckId = null;
+let syncTimer = null;
+let syncDirty = false;
+let selectedAvatar = PROFILE_AVATARS[0];
+
+// ─── PERSISTENCE ─────────────────────────────────────────────────
+function saveState() {
+  persistLocalState();
+  scheduleSync();
+}
+
+function persistLocalState() {
+  localStorage.setItem('studyforge_decks', JSON.stringify(state.decks));
+}
+
+function loadState() {
+  try {
+    const d = localStorage.getItem('studyforge_decks');
+    if (d) state.decks = JSON.parse(d);
+  } catch(e) {}
+}
+
+function resetDeckState() {
+  state.decks = {};
+  state.activeDeck = null;
+  state.activeTab = 'flashcards';
+  state.quizState = null;
+  state.cardLanguage = {};
+  state.cardFlipped = {};
+  persistLocalState();
+}
+
+function hasAccountSync() {
+  return Boolean(state.user);
+}
+
+function getSyncUpdatedAt() {
+  const raw = localStorage.getItem('studyforge_sync_updated_at');
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function setSyncUpdatedAt(updatedAt) {
+  if (updatedAt) localStorage.setItem('studyforge_sync_updated_at', String(updatedAt));
+  else localStorage.removeItem('studyforge_sync_updated_at');
+}
+
+function updateSyncStatus(label) {
+  const status = document.getElementById('sync-status');
+  if (!status) return;
+  if (label) {
+    status.textContent = label;
+    return;
+  }
+  if (hasAccountSync()) {
+    status.textContent = `Synced as @${state.user.username}`;
+    return;
+  }
+  status.textContent = 'Sign in required';
+}
+
+function scheduleSync() {
+  if (!hasAccountSync()) {
+    updateSyncStatus('Sign in required');
+    return;
+  }
+  syncDirty = true;
+  updateSyncStatus('Sync pending…');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    syncDecksToCloud({ quiet: true });
+  }, 500);
+}
+
+async function syncDecksToCloud({ quiet = false } = {}) {
+  if (!hasAccountSync()) return { ok: false };
+
+  updateSyncStatus('Syncing…');
+  try {
+    const payload = {
+      baseUpdatedAt: getSyncUpdatedAt(),
+      decks: state.decks,
+    };
+    const resp = await fetch('/api/sync/push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      if (resp.status === 409) {
+        setSyncUpdatedAt(data.updatedAt || getSyncUpdatedAt());
+        updateSyncStatus('Remote changed');
+        if (!quiet) toast(data.error?.message || 'Remote changed on another device', 'error');
+        return { ok: false, conflict: true };
+      }
+      throw new Error(data.error?.message || `Sync error ${resp.status}`);
+    }
+    syncDirty = false;
+    setSyncUpdatedAt(data.updatedAt || Date.now());
+    updateSyncStatus('Sync enabled');
+    if (!quiet) toast('Synced to cloud', 'success');
+    return { ok: true };
+  } catch (e) {
+    updateSyncStatus('Sync failed');
+    if (!quiet) toast(`Sync failed: ${e.message}`, 'error');
+    return { ok: false };
+  }
+}
+
+async function pullSyncedDecks({ quiet = false, force = false } = {}) {
+  if (!hasAccountSync()) return false;
+  if (syncDirty && !force) return false;
+
+  updateSyncStatus('Syncing…');
+  try {
+    const resp = await fetch('/api/sync/pull', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) throw new Error(data.error?.message || `Sync error ${resp.status}`);
+
+    if (data.hasData) {
+      state.decks = data.decks || {};
+      setSyncUpdatedAt(data.updatedAt || null);
+      persistLocalState();
+      renderSidebar();
+      renderMain();
+      if (!quiet) toast('Synced from cloud', 'success');
+    } else {
+      setSyncUpdatedAt(null);
+    }
+
+    updateSyncStatus('Sync enabled');
+    return Boolean(data.hasData);
+  } catch (e) {
+    updateSyncStatus('Sync failed');
+    if (!quiet) toast(`Sync failed: ${e.message}`, 'error');
+    return false;
+  }
+}
+
+async function syncNow() {
+  if (!hasAccountSync()) return;
+  clearTimeout(syncTimer);
+  if (syncDirty) {
+    const result = await syncDecksToCloud({ quiet: true });
+    if (!result.ok) return;
+  }
+  await pullSyncedDecks({ quiet: false, force: true });
+}
+
+function renderAvatarGrid() {
+  const grid = document.getElementById('avatar-grid');
+  grid.innerHTML = PROFILE_AVATARS.map(avatar => `
+    <button class="avatar-option ${avatar === selectedAvatar ? 'selected' : ''}" onclick="chooseAvatar(event, '${avatar}')">${avatar}</button>
+  `).join('');
+}
+
+function chooseAvatar(event, avatar) {
+  event.preventDefault();
+  selectedAvatar = avatar;
+  renderAvatarGrid();
+}
+
+function renderProfilePanel() {
+  const panel = document.getElementById('profile-panel');
+  if (!panel) return;
+
+  if (!state.user) {
+    panel.innerHTML = `
+      <div class="profile-card">
+        <div class="profile-head">
+          <div class="profile-avatar">✨</div>
+          <div>
+            <div class="profile-name">Account Required</div>
+            <div class="profile-handle">Sign in to start studying</div>
+          </div>
+        </div>
+        <div class="profile-sub">Your decks sync automatically across devices after you sign in.</div>
+        <div class="profile-actions">
+          <button class="btn-primary" onclick="openAuthModal('register')">Join</button>
+          <button class="btn-sidebar-secondary" onclick="openAuthModal('login')">Sign In</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  panel.innerHTML = `
+    <div class="profile-card">
+      <div class="profile-head">
+        <div class="profile-avatar">${escHtml(state.user.avatar)}</div>
+        <div>
+          <div class="profile-name">${escHtml(state.user.displayName)}</div>
+          <div class="profile-handle">@${escHtml(state.user.username)}</div>
+        </div>
+      </div>
+      <div class="profile-sub">Deck sync is attached to this account on every device you sign into.</div>
+      <div class="profile-actions">
+        <button class="btn-sidebar-secondary" onclick="logoutUser()">Log Out</button>
+      </div>
+    </div>`;
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode === 'register' ? 'register' : 'login';
+  document.getElementById('auth-tab-login').classList.toggle('active', state.authMode === 'login');
+  document.getElementById('auth-tab-register').classList.toggle('active', state.authMode === 'register');
+  document.getElementById('auth-title').textContent = state.authMode === 'register' ? 'Create Your Profile' : 'Welcome Back';
+  document.getElementById('auth-sub').textContent = state.authMode === 'register'
+    ? 'Your profile keeps decks synced for you on every device.'
+    : 'Sign in to load your synced decks.';
+  document.getElementById('auth-submit-btn').textContent = state.authMode === 'register' ? 'Create Account' : 'Sign In';
+  document.querySelectorAll('.auth-register-only').forEach(el => {
+    el.classList.toggle('show', state.authMode === 'register');
+  });
+}
+
+function openAuthModal(mode = 'login') {
+  setAuthMode(mode);
+  selectedAvatar = PROFILE_AVATARS[0];
+  document.getElementById('auth-first-name').value = '';
+  document.getElementById('auth-last-name').value = '';
+  document.getElementById('auth-username').value = '';
+  document.getElementById('auth-nickname').value = '';
+  document.getElementById('auth-password').value = '';
+  renderAvatarGrid();
+  document.getElementById('auth-modal').style.display = 'flex';
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').style.display = 'none';
+}
+
+async function submitAuth() {
+  if (state.authMode === 'register') {
+    return registerUser();
+  }
+  return loginUser();
+}
+
+async function registerUser() {
+  const payload = {
+    firstName: document.getElementById('auth-first-name').value.trim(),
+    lastName: document.getElementById('auth-last-name').value.trim(),
+    username: document.getElementById('auth-username').value.trim().toLowerCase(),
+    nickname: document.getElementById('auth-nickname').value.trim(),
+    avatar: selectedAvatar,
+    password: document.getElementById('auth-password').value,
+  };
+  const resp = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    toast(data.error?.message || 'Could not create account', 'error');
+    return;
+  }
+  await finishAuth(data.user, 'Account created');
+}
+
+async function loginUser() {
+  const payload = {
+    username: document.getElementById('auth-username').value.trim().toLowerCase(),
+    password: document.getElementById('auth-password').value,
+  };
+  const resp = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    toast(data.error?.message || 'Could not sign in', 'error');
+    return;
+  }
+  await finishAuth(data.user, 'Signed in');
+}
+
+async function finishAuth(user, toastMessage) {
+  state.user = user;
+  renderProfilePanel();
+  closeAuthModal();
+  updateSyncStatus('Syncing…');
+  const hadRemote = await pullSyncedDecks({ quiet: true, force: true });
+  if (!hadRemote && Object.keys(state.decks).length) {
+    syncDirty = true;
+    await syncDecksToCloud({ quiet: true });
+  }
+  updateSyncStatus();
+  renderSidebar();
+  renderMain();
+  toast(toastMessage, 'success');
+}
+
+async function logoutUser() {
+  await fetch('/api/auth/logout', { method: 'POST' });
+  state.user = null;
+  syncDirty = false;
+  setSyncUpdatedAt(null);
+  resetDeckState();
+  renderSidebar();
+  renderMain();
+  updateSyncStatus();
+  toast('Signed out', 'success');
+}
+
+async function loadSession() {
+  try {
+    const resp = await fetch('/api/auth/session');
+    const data = await resp.json().catch(() => ({}));
+    state.user = data.authenticated ? data.user : null;
+    renderProfilePanel();
+    updateSyncStatus();
+    if (state.user) {
+      await pullSyncedDecks({ quiet: true, force: true });
+    } else {
+      resetDeckState();
+      renderSidebar();
+      renderMain();
+      openAuthModal('login');
+    }
+  } catch {
+    renderProfilePanel();
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ─── SIDEBAR ─────────────────────────────────────────────────────
+function renderSidebar() {
+  renderProfilePanel();
+  const list = document.getElementById('deck-list');
+  const decks = Object.values(state.decks);
+  if (!decks.length) {
+    list.innerHTML = '<p style="padding:12px 20px;font-size:12px;color:var(--muted);">No decks yet</p>';
+    return;
+  }
+  list.innerHTML = decks.map(d => `
+    <div class="deck-item ${d.id === state.activeDeck ? 'active' : ''}" onclick="selectDeck('${d.id}')">
+      <div class="deck-icon">📖</div>
+      <div class="deck-info">
+        <div class="deck-name">${d.name}</div>
+        <div class="deck-meta">${d.flashcards?.length || 0} cards · ${d.quiz?.length || 0} Qs</div>
+      </div>
+      <button class="delete-deck" onclick="deleteDeck(event,'${d.id}')">×</button>
+    </div>
+  `).join('');
+}
+
+function selectDeck(id) {
+  state.activeDeck = id;
+  state.activeTab = 'flashcards';
+  state.quizState = null;
+  renderSidebar();
+  renderMain();
+}
+
+function deleteDeck(e, id) {
+  e.stopPropagation();
+  if (!confirm('Delete this deck?')) return;
+  delete state.decks[id];
+  if (state.activeDeck === id) {
+    state.activeDeck = null;
+    state.quizState = null;
+  }
+  saveState();
+  renderSidebar();
+  renderMain();
+  toast('Deck deleted');
+}
+
+// ─── UPLOAD MODAL ─────────────────────────────────────────────────
+function openUploadModal() {
+  if (!state.user) {
+    openAuthModal('login');
+    return;
+  }
+  pendingFile = null;
+  document.getElementById('drop-text').innerHTML = '<strong>Click or drag</strong> a PDF here';
+  document.getElementById('deck-name-input').value = '';
+  document.getElementById('generate-btn').disabled = true;
+  document.getElementById('upload-modal').style.display = 'flex';
+}
+function closeUploadModal() {
+  document.getElementById('upload-modal').style.display = 'none';
+  pendingFile = null;
+}
+
+function openImportDeckPicker() {
+  if (!state.user) {
+    openAuthModal('login');
+    return;
+  }
+  document.getElementById('import-deck-input').click();
+}
+
+async function importDeckFile(file) {
+  if (!state.user) {
+    openAuthModal('login');
+    return;
+  }
+  if (!file) return;
+
+  try {
+    const raw = await file.text();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.flashcards) || !Array.isArray(parsed.quiz)) {
+      throw new Error('Invalid deck file');
+    }
+
+    const id = 'deck_' + Date.now();
+    state.decks[id] = {
+      id,
+      name: parsed.name || file.name.replace(/\.json$/i, ''),
+      text: parsed.text || '',
+      flashcards: parsed.flashcards,
+      quiz: parsed.quiz,
+      quizConfig: {
+        choiceCount: parsed.quizConfig?.choiceCount || 4,
+        qTypes: parsed.quizConfig?.qTypes || 'mixed',
+      },
+      srData: parsed.srData || {},
+    };
+    saveState();
+    selectDeck(id);
+    toast('Deck imported', 'success');
+  } catch (e) {
+    toast(e.message || 'Import failed', 'error');
+  }
+}
+
+function exportActiveDeck() {
+  if (!state.user) {
+    openAuthModal('login');
+    return;
+  }
+  const deck = state.decks[state.activeDeck];
+  if (!deck) {
+    toast('Open a deck first', 'error');
+    return;
+  }
+
+  const blob = new Blob([JSON.stringify(deck, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${deck.name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'studyforge-deck'}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function handleFileSelect(file) {
+  if (!file) return;
+  pendingFile = file;
+  document.getElementById('drop-text').innerHTML = `<strong>✓ ${file.name}</strong>`;
+  if (!document.getElementById('deck-name-input').value) {
+    document.getElementById('deck-name-input').value = file.name.replace(/\.pdf$/i,'');
+  }
+  document.getElementById('generate-btn').disabled = false;
+}
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type === 'application/pdf') handleFileSelect(f);
+});
+
+// ─── PDF EXTRACTION ───────────────────────────────────────────────
+async function extractPdfContent(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const pages = [];
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(it => it.str).join(' ').trim();
+    pages.push({ pageNumber: i, text: pageText });
+    text += pageText + '\n';
+  }
+  return { text: text.trim(), pages };
+}
+
+// ─── GENERATION ───────────────────────────────────────────────────
+async function startGeneration() {
+  if (!pendingFile) return;
+  const file = pendingFile;
+  const name = document.getElementById('deck-name-input').value.trim() || pendingFile.name.replace(/\.pdf$/i,'');
+  const fcCount = parseInt(document.getElementById('fc-count').value);
+  const qqCount = parseInt(document.getElementById('qq-count').value);
+  const choiceCount = parseInt(document.getElementById('choice-count').value);
+  const qTypes = document.getElementById('q-types').value;
+
+  closeUploadModal();
+  _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes);
+}
+
+async function _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes, deckIdToUpdate=null) {
+  if (!file) throw new Error('No PDF file selected.');
+  // Show loading
+  state.activeDeck = null;
+  document.getElementById('deck-title').textContent = 'Generating…';
+  document.getElementById('tab-buttons').style.display = 'none';
+  document.getElementById('content').innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Reading PDF…</p>
+    </div>`;
+  renderSidebar();
+
+  try {
+    const { text, pages } = await extractPdfContent(file);
+    document.querySelector('.loading-state p').textContent = 'Generating study materials…';
+
+    const { flashcards, quiz } = await generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes);
+
+    const id = deckIdToUpdate || ('deck_' + Date.now());
+    const srData = {};
+    flashcards.forEach((_, i) => { srData[i] = { ease: 2.5, interval: 1, reps: 0 }; });
+
+    if (deckIdToUpdate) {
+      // Preserve existing PDF text (already stored)
+      const existing = state.decks[deckIdToUpdate];
+      state.decks[deckIdToUpdate] = {
+        ...existing,
+        pages,
+        flashcards,
+        quiz,
+        quizConfig: { choiceCount, qTypes },
+        srData,
+      };
+    } else {
+      state.decks[id] = { id, name, text: text.slice(0, 80000), pages, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
+    }
+
+    saveState();
+    selectDeck(deckIdToUpdate || id);
+    toast('Deck ready! ✦', 'success');
+  } catch(e) {
+    console.error(e);
+    document.getElementById('content').innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">⚠️</div>
+        <p>Generation failed: ${e.message}</p>
+        <p style="margin-top:8px;font-size:12px;">Check the server setup or try again.</p>
+      </div>`;
+    toast('Generation failed', 'error');
+  }
+}
+
+async function generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes) {
+  const resp = await fetch('/api/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      text,
+      pages,
+      fcCount,
+      qqCount,
+      choiceCount,
+      qTypes,
+    }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${resp.status}`);
+  }
+
+  return resp.json();
+}
+
+// ─── REGEN MODAL ─────────────────────────────────────────────────
+function openRegenModal(deckId) {
+  pendingRegenDeckId = deckId;
+  const deck = state.decks[deckId];
+  document.getElementById('regen-modal-sub').textContent = `Regenerate content for "${deck.name}"`;
+  document.getElementById('regen-fc-count').value = deck.flashcards?.length || 20;
+  document.getElementById('regen-fc-val').textContent = deck.flashcards?.length || 20;
+  document.getElementById('regen-qq-count').value = deck.quiz?.length || 15;
+  document.getElementById('regen-qq-val').textContent = deck.quiz?.length || 15;
+  document.getElementById('regen-choice-count').value = deck.quizConfig?.choiceCount || 4;
+  document.getElementById('regen-q-types').value = deck.quizConfig?.qTypes || 'mixed';
+  document.getElementById('regen-modal').style.display = 'flex';
+}
+function closeRegenModal() {
+  document.getElementById('regen-modal').style.display = 'none';
+}
+
+async function confirmRegen() {
+  if (!pendingRegenDeckId) return;
+  const deck = state.decks[pendingRegenDeckId];
+  if (!deck?.text) { toast('PDF text not cached, re-upload the PDF', 'error'); closeRegenModal(); return; }
+
+  const fcCount = parseInt(document.getElementById('regen-fc-count').value);
+  const qqCount = parseInt(document.getElementById('regen-qq-count').value);
+  const choiceCount = parseInt(document.getElementById('regen-choice-count').value);
+  const qTypes = document.getElementById('regen-q-types').value;
+  closeRegenModal();
+
+  document.getElementById('deck-title').textContent = 'Regenerating…';
+  document.getElementById('tab-buttons').style.display = 'none';
+  document.getElementById('content').innerHTML = `
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Regenerating study materials…</p>
+    </div>`;
+
+  try {
+    const { flashcards, quiz } = await generateStudyMaterials(deck.text, deck.pages || [], fcCount, qqCount, choiceCount, qTypes);
+    const srData = {};
+    flashcards.forEach((_, i) => { srData[i] = { ease: 2.5, interval: 1, reps: 0 }; });
+    state.decks[pendingRegenDeckId] = { ...deck, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
+    saveState();
+    selectDeck(pendingRegenDeckId);
+    toast('Regenerated! ✦', 'success');
+  } catch(e) {
+    toast('Regeneration failed: ' + e.message, 'error');
+    selectDeck(pendingRegenDeckId);
+  }
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────
+function renderMain() {
+  const content = document.getElementById('content');
+  const titleEl = document.getElementById('deck-title');
+  const tabBtns = document.getElementById('tab-buttons');
+
+  if (!state.user) {
+    titleEl.textContent = 'Welcome';
+    tabBtns.style.display = 'none';
+    content.innerHTML = `
+      <div id="welcome">
+        <div class="welcome-icon">🔐</div>
+        <h2>Sign in to study</h2>
+        <p>Create an account or sign in to access your decks and keep them synced on every device.</p>
+        <button class="btn-upload-sidebar" style="max-width:240px;" onclick="openAuthModal('register')">
+          <span>＋</span> Create account
+        </button>
+      </div>`;
+    return;
+  }
+
+  if (!state.activeDeck || !state.decks[state.activeDeck]) {
+    titleEl.textContent = 'Welcome';
+    tabBtns.style.display = 'none';
+    content.innerHTML = `
+      <div id="welcome">
+        <div class="welcome-icon">📚</div>
+        <h2>Start studying smarter</h2>
+        <p>Upload a PDF to automatically generate flashcards and quizzes powered by Gemini through your private backend.</p>
+        <button class="btn-upload-sidebar" style="max-width:240px;" onclick="openUploadModal()">
+          <span>＋</span> Upload your first PDF
+        </button>
+      </div>`;
+    return;
+  }
+
+  const deck = state.decks[state.activeDeck];
+  titleEl.textContent = deck.name;
+  tabBtns.style.display = 'flex';
+
+  // Update active tab button
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.toggle('active', (i === 0) === (state.activeTab === 'flashcards'));
+  });
+
+  if (state.activeTab === 'flashcards') renderFlashcards(deck, content);
+  else renderQuiz(deck, content);
+}
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  renderMain();
+}
+
+// ─── FLASHCARDS ───────────────────────────────────────────────────
+function renderFlashcards(deck, container) {
+  const cards = deck.flashcards || [];
+  const sr = deck.srData || {};
+  const known = Object.values(sr).filter(s => s.lastMark === 'easy').length;
+  const orderedCards = cards
+    .map((card, idx) => ({ card, idx, sr: sr[idx] }))
+    .sort((a, b) => {
+      const aDone = a.sr?.lastMark === 'easy' ? 1 : 0;
+      const bDone = b.sr?.lastMark === 'easy' ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      return a.idx - b.idx;
+    });
+
+  container.innerHTML = `
+    <div class="deck-header">
+      <div>
+        <h3>${cards.length} Flashcards</h3>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="stat-chip green">✓ ${known} known</span>
+        <span class="stat-chip red">⟳ ${cards.length - known} to review</span>
+        <button class="regen-btn" onclick="openRegenModal('${deck.id}')">↺ Regenerate</button>
+      </div>
+    </div>
+    <div class="cards-grid" id="cards-grid">
+      ${orderedCards.map(({ card, idx, sr: itemSr }) => renderCard(card, idx, itemSr)).join('')}
+    </div>`;
+}
+
+function renderCard(card, idx, sr) {
+  const cardLanguage = getCardLanguage(idx, card);
+  const definitionText = cardLanguage === 'tr' && card.definitionTr ? card.definitionTr : card.definition;
+  return `
+    <div class="flashcard ${isCardFlipped(idx) ? 'flipped' : ''}" id="card-${idx}" onclick="flipCard(${idx})">
+      <div class="flashcard-inner">
+        <div class="card-face front">
+          <div class="card-label">TERM</div>
+          ${card.page ? `<div class="card-source">PAGE ${escHtml(card.page)}</div>` : ''}
+          <div class="card-term">${escHtml(card.term)}</div>
+          <div class="card-flip-hint">click to reveal</div>
+        </div>
+        <div class="card-face back">
+          <div class="card-label">DEFINITION</div>
+          <div class="card-meta-row">
+            ${card.page ? `<div class="card-source">PAGE ${escHtml(card.page)}</div>` : '<div></div>'}
+            ${card.definitionTr ? `<button class="card-translate-btn" onclick="toggleCardLanguage(event, ${idx})">${cardLanguage === 'tr' ? 'Show English' : 'Translate'}</button>` : ''}
+          </div>
+          <div class="card-def">${escHtml(definitionText)}</div>
+          <div class="card-sr-badges" onclick="event.stopPropagation()">
+            <button class="sr-btn easy ${sr?.lastMark==='easy'?'selected':''}" onclick="markCard(${idx},'easy')">✓ Got it</button>
+            <button class="sr-btn hard ${sr?.lastMark==='hard'?'selected':''}" onclick="markCard(${idx},'hard')">✗ Missed</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function flipCard(idx) {
+  if (!state.activeDeck) return;
+  if (!state.cardFlipped[state.activeDeck]) state.cardFlipped[state.activeDeck] = {};
+  state.cardFlipped[state.activeDeck][idx] = !state.cardFlipped[state.activeDeck][idx];
+  document.getElementById('card-' + idx)?.classList.toggle('flipped');
+}
+
+function markCard(idx, mark) {
+  const deck = state.decks[state.activeDeck];
+  if (!deck.srData) deck.srData = {};
+  const s = deck.srData[idx] || { ease: 2.5, interval: 1, reps: 0 };
+  // SM-2
+  if (mark === 'easy') {
+    s.reps++;
+    s.interval = s.reps === 1 ? 1 : s.reps === 2 ? 6 : Math.round(s.interval * s.ease);
+    s.ease = Math.max(1.3, s.ease + 0.1);
+  } else {
+    s.reps = 0; s.interval = 1; s.ease = Math.max(1.3, s.ease - 0.2);
+  }
+  s.lastMark = mark;
+  deck.srData[idx] = s;
+  saveState();
+  renderMain();
+}
+
+function getCardLanguage(idx, card) {
+  if (!card?.definitionTr || !state.activeDeck) return 'en';
+  return state.cardLanguage[state.activeDeck]?.[idx] || 'en';
+}
+
+function isCardFlipped(idx) {
+  if (!state.activeDeck) return false;
+  return Boolean(state.cardFlipped[state.activeDeck]?.[idx]);
+}
+
+function toggleCardLanguage(event, idx) {
+  event.stopPropagation();
+  if (!state.activeDeck) return;
+  if (!state.cardLanguage[state.activeDeck]) state.cardLanguage[state.activeDeck] = {};
+  state.cardLanguage[state.activeDeck][idx] = state.cardLanguage[state.activeDeck][idx] === 'tr' ? 'en' : 'tr';
+  renderMain();
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────────────
+function renderQuiz(deck, container) {
+  const questions = deck.quiz || [];
+  if (!questions.length) {
+    container.innerHTML = `<div class="empty-state"><div class="emoji">📝</div><p>No quiz questions. Try regenerating the deck.</p></div>`;
+    return;
+  }
+
+  if (!state.quizState) {
+    // Start screen
+    container.innerHTML = `
+      <div class="quiz-container">
+        <div style="text-align:center;padding:60px 0;">
+          <div style="font-size:48px;margin-bottom:16px;">🎯</div>
+          <h3 style="font-family:var(--serif);font-size:28px;font-style:italic;margin-bottom:10px;">${questions.length} Questions</h3>
+          <p style="color:var(--muted);margin-bottom:32px;">Test your knowledge of ${deck.name}</p>
+          <button class="btn-primary" style="max-width:200px;margin:0 auto;display:block;" onclick="beginQuiz()">Start Quiz</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const qs = state.quizState;
+  if (qs.done) { renderResults(deck, container); return; }
+
+  const questionIndex = qs.queue[qs.current];
+  const q = questions[questionIndex];
+  const answered = qs.responses[qs.current];
+  const isRetryRound = qs.current >= qs.initialCount;
+
+  container.innerHTML = `
+    <div class="quiz-container">
+      <div class="quiz-progress-bar">
+        <div class="quiz-progress-fill" style="width:${(qs.current / Math.max(qs.queue.length, 1)) * 100}%"></div>
+      </div>
+      <div class="question-card">
+        <div class="q-meta">Question ${qs.current + 1} of ${qs.queue.length} · ${q.type === 'fill' ? 'Fill in the blank' : 'Multiple choice'}${isRetryRound ? ' · Retry Round' : ''}</div>
+        <div class="q-text">${escHtml(q.question)}</div>
+        ${q.type === 'mcq' ? renderMCQ(q, answered) : renderFill(q, answered)}
+        <div class="feedback-row ${answered ? (answered.correct ? 'correct' : 'wrong') : ''}" id="feedback">
+          ${answered ? (answered.correct ? '✓ Correct! ' : '✗ Incorrect. ') + escHtml(q.explanation || '') : ''}
+        </div>
+      </div>
+      <div class="quiz-nav">
+        <button class="btn-next" id="btn-next" style="${answered ? 'display:block' : 'display:none'}" onclick="nextQuestion()">
+          ${qs.current + 1 >= qs.queue.length ? 'See Results →' : 'Next →'}
+        </button>
+      </div>
+    </div>`;
+
+  if (q.type === 'fill' && !answered) {
+    document.getElementById('fill-input')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitFill();
+    });
+  }
+}
+
+function renderMCQ(q, answered) {
+  const letters = ['A','B','C','D','E'];
+  return `<div class="choices">
+    ${q.choices.map((c, i) => {
+      let cls = '';
+      if (answered) {
+        cls = 'answered ';
+        if (c === q.answer) cls += 'correct';
+        else if (answered.selected === c) cls += 'wrong';
+      }
+      return `<button class="choice-btn ${cls}" onclick="answerMCQ('${escAttr(c)}')">
+        <span class="choice-letter">${letters[i]}</span>${escHtml(c)}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+function renderFill(q, answered) {
+  const cls = answered ? (answered.correct ? 'correct' : 'wrong') : '';
+  return `<div style="display:flex;gap:10px;align-items:center;">
+    <input class="fill-input ${cls}" id="fill-input" type="text" placeholder="Type your answer…"
+      ${answered ? `value="${escAttr(answered.selected)}" disabled` : ''} />
+    ${!answered ? `<button class="btn-primary" style="white-space:nowrap;padding:12px 20px;" onclick="submitFill()">Submit</button>` : ''}
+  </div>
+  ${answered && !answered.correct ? `<p style="margin-top:10px;font-size:13px;color:var(--muted);">Correct answer: <strong style="color:var(--text)">${escHtml(q.answer)}</strong></p>` : ''}`;
+}
+
+function beginQuiz() {
+  const total = state.decks[state.activeDeck].quiz.length;
+  state.quizState = {
+    queue: Array.from({ length: total }, (_, i) => i),
+    current: 0,
+    responses: {},
+    perQuestion: {},
+    missedQueue: [],
+    initialCount: total,
+    done: false,
+  };
+  renderMain();
+}
+
+function answerMCQ(choice) {
+  const qs = state.quizState;
+  if (qs.responses[qs.current]) return;
+  const questionIndex = qs.queue[qs.current];
+  const q = state.decks[state.activeDeck].quiz[questionIndex];
+  const correct = choice === q.answer;
+  recordQuizAnswer(questionIndex, { selected: choice, correct });
+  renderMain();
+}
+
+function submitFill() {
+  const input = document.getElementById('fill-input');
+  if (!input) return;
+  const val = input.value.trim();
+  if (!val) return;
+  const qs = state.quizState;
+  const questionIndex = qs.queue[qs.current];
+  const q = state.decks[state.activeDeck].quiz[questionIndex];
+  const correct = val.toLowerCase().trim() === q.answer.toLowerCase().trim();
+  recordQuizAnswer(questionIndex, { selected: val, correct });
+  renderMain();
+}
+
+function recordQuizAnswer(questionIndex, response) {
+  const qs = state.quizState;
+  qs.responses[qs.current] = response;
+  const previous = qs.perQuestion[questionIndex];
+  qs.perQuestion[questionIndex] = {
+    ...response,
+    attempts: (previous?.attempts || 0) + 1,
+  };
+
+  const isInitialRound = qs.current < qs.initialCount;
+  if (!response.correct && isInitialRound && !qs.missedQueue.includes(questionIndex)) {
+    qs.missedQueue.push(questionIndex);
+  }
+}
+
+function nextQuestion() {
+  const qs = state.quizState;
+  if (qs.current + 1 < qs.queue.length) {
+    qs.current++;
+    renderMain();
+    return;
+  }
+
+  if (qs.missedQueue.length && qs.queue.length === qs.initialCount) {
+    qs.queue = qs.queue.concat(shuffleArray(qs.missedQueue));
+    qs.current++;
+    renderMain();
+    return;
+  }
+
+  qs.done = true;
+  renderMain();
+}
+
+function renderResults(deck, container) {
+  const qs = state.quizState;
+  const total = deck.quiz.length;
+  const correct = Object.values(qs.perQuestion).filter(a => a.correct).length;
+  const wrong = total - correct;
+  const retried = Object.values(qs.perQuestion).filter(a => a.attempts > 1).length;
+  const pct = Math.round((correct / Math.max(total, 1)) * 100);
+  const grade = pct >= 90 ? '🏆' : pct >= 70 ? '🎯' : pct >= 50 ? '📖' : '💪';
+
+  container.innerHTML = `
+    <div class="quiz-container" style="padding-top:40px;">
+      <div class="results-card">
+        <div style="font-size:48px;margin-bottom:16px;">${grade}</div>
+        <div class="results-score">${pct}%</div>
+        <div class="results-label">Quiz complete — ${correct} of ${total} correct${retried ? ` · ${retried} retried` : ''}</div>
+        <div class="results-breakdown">
+          <div class="breakdown-item">
+            <div class="breakdown-num" style="color:var(--success)">${correct}</div>
+            <div class="breakdown-lbl">Correct</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-num" style="color:var(--danger)">${wrong}</div>
+            <div class="breakdown-lbl">Wrong</div>
+          </div>
+          <div class="breakdown-item">
+            <div class="breakdown-num" style="color:var(--muted)">${total}</div>
+            <div class="breakdown-lbl">Total</div>
+          </div>
+        </div>
+        <div class="results-actions">
+          <button class="btn-secondary" onclick="reviewMissed()">Review Missed</button>
+          <button class="btn-primary" onclick="beginQuiz()">Retake Quiz</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function reviewMissed() {
+  const qs = state.quizState;
+  const missed = Object.entries(qs.perQuestion)
+    .filter(([, answer]) => !answer.correct)
+    .map(([index]) => Number(index));
+  if (!missed.length) { toast('No missed questions!', 'success'); return; }
+  state.quizState = {
+    queue: shuffleArray(missed),
+    current: 0,
+    responses: {},
+    perQuestion: {},
+    missedQueue: [],
+    initialCount: missed.length,
+    done: false,
+  };
+  renderMain();
+}
+
+function shuffleArray(items) {
+  const arr = items.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+  return String(str).replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────
+loadState();
+renderSidebar();
+renderMain();
+updateSyncStatus();
+renderAvatarGrid();
+setAuthMode('login');
+loadSession();
+window.addEventListener('focus', () => {
+  if (hasAccountSync()) pullSyncedDecks({ quiet: true, force: true });
+});
+</script>
+</body>
+</html>
