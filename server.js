@@ -189,7 +189,7 @@ async function handleSyncPull(req, res) {
   let row = null;
 
   if (session?.user) {
-    row = await dataStore.getUserDecks(session.user.userId);
+    row = await dataStore.getUserDecks(getUserId(session.user));
   } else {
     const syncKey = String(body.syncKey || '').trim();
     if (!syncKey) {
@@ -238,7 +238,7 @@ async function handleSyncPush(req, res) {
   let current = null;
 
   if (session?.user) {
-    current = await dataStore.getUserDecks(session.user.userId);
+    current = await dataStore.getUserDecks(getUserId(session.user));
   } else {
     const syncKey = String(body.syncKey || '').trim();
     if (!syncKey) {
@@ -274,7 +274,7 @@ async function handleSyncPush(req, res) {
     }
   }
 
-  await dataStore.putUserDecks(session.user.userId, decksJson, updatedAt);
+  await dataStore.putUserDecks(getUserId(session.user), decksJson, updatedAt);
 
   sendJson(res, 200, {
     ok: true,
@@ -935,7 +935,7 @@ function buildPublicUser(user) {
   const lastName = user.last_name || user.lastName;
   const nickname = user.nickname || '';
   return {
-    userId: user.user_id || user.userId,
+    userId: getUserId(user),
     username: user.username,
     firstName,
     lastName,
@@ -943,6 +943,10 @@ function buildPublicUser(user) {
     avatar: user.avatar,
     displayName: nickname || `${firstName} ${lastName}`.trim(),
   };
+}
+
+function getUserId(user) {
+  return user?.user_id || user?.userId || '';
 }
 
 function randomId(prefix) {
