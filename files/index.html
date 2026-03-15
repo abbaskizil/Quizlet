@@ -76,9 +76,6 @@
     text-transform: uppercase;
   }
 
-  #profile-panel {
-    padding: 14px 16px 0;
-  }
   .profile-card {
     border: 1px solid var(--border);
     background: var(--surface2);
@@ -204,6 +201,29 @@
     background: var(--surface);
   }
   #topbar h2 { font-family: var(--serif); font-size: 20px; font-style: italic; flex: 1; }
+  #profile-panel {
+    min-width: 220px;
+    display: flex;
+    justify-content: flex-end;
+  }
+  #profile-panel .profile-card {
+    width: min(100%, 260px);
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+  #profile-panel .profile-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    font-size: 20px;
+  }
+  #profile-panel .profile-sub {
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  #profile-panel .profile-actions {
+    margin-top: 10px;
+  }
   #topbar .tab-btn {
     padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
     border: 1px solid var(--border); background: transparent; color: var(--muted);
@@ -552,7 +572,6 @@
       <h1>StudyForge</h1>
       <p>AI-powered study tool</p>
     </div>
-    <div id="profile-panel"></div>
     <div class="sidebar-section-label">Your Decks</div>
     <div id="deck-list"></div>
     <div class="sidebar-bottom">
@@ -571,11 +590,12 @@
   <!-- MAIN -->
   <div id="main">
     <div id="topbar">
-      <h2 id="deck-title">Welcome</h2>
       <div id="tab-buttons" style="display:none;">
         <button class="tab-btn active" onclick="switchTab('flashcards')">Flashcards</button>
         <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
       </div>
+      <h2 id="deck-title">Welcome</h2>
+      <div id="profile-panel"></div>
     </div>
     <div id="content">
       <div id="welcome">
@@ -763,19 +783,29 @@ let syncDirty = false;
 let selectedAvatar = PROFILE_AVATARS[0];
 
 // ─── PERSISTENCE ─────────────────────────────────────────────────
-function saveState() {
+function saveState({ immediate = false } = {}) {
   persistLocalState();
-  scheduleSync();
+  if (immediate) syncNow({ quiet: true });
+  else scheduleSync();
 }
 
 function persistLocalState() {
   localStorage.setItem('studyforge_decks', JSON.stringify(state.decks));
+  localStorage.setItem('studyforge_ui', JSON.stringify({
+    activeDeck: state.activeDeck,
+    activeTab: state.activeTab,
+  }));
 }
 
 function loadState() {
   try {
     const d = localStorage.getItem('studyforge_decks');
     if (d) state.decks = JSON.parse(d);
+  } catch(e) {}
+  try {
+    const ui = JSON.parse(localStorage.getItem('studyforge_ui') || '{}');
+    if (ui.activeDeck) state.activeDeck = ui.activeDeck;
+    if (ui.activeTab === 'quiz' || ui.activeTab === 'flashcards') state.activeTab = ui.activeTab;
   } catch(e) {}
 }
 
@@ -905,14 +935,14 @@ async function pullSyncedDecks({ quiet = false, force = false } = {}) {
   }
 }
 
-async function syncNow() {
+async function syncNow({ quiet = false } = {}) {
   if (!hasAccountSync()) return;
   clearTimeout(syncTimer);
   if (syncDirty) {
     const result = await syncDecksToCloud({ quiet: true });
     if (!result.ok) return;
   }
-  await pullSyncedDecks({ quiet: false, force: true });
+  await pullSyncedDecks({ quiet, force: true });
 }
 
 function renderAvatarGrid() {
@@ -1082,7 +1112,6 @@ async function loadSession() {
     if (state.user) {
       await pullSyncedDecks({ quiet: true, force: true });
     } else {
-      resetDeckState();
       renderSidebar();
       renderMain();
       openAuthModal('login');
@@ -1126,6 +1155,7 @@ function selectDeck(id) {
   state.activeDeck = id;
   state.activeTab = 'flashcards';
   state.quizState = null;
+  persistLocalState();
   renderSidebar();
   renderMain();
 }
@@ -1138,7 +1168,7 @@ function deleteDeck(e, id) {
     state.activeDeck = null;
     state.quizState = null;
   }
-  saveState();
+  saveState({ immediate: true });
   renderSidebar();
   renderMain();
   toast('Deck deleted');
@@ -1196,7 +1226,7 @@ async function importDeckFile(file) {
       },
       srData: parsed.srData || {},
     };
-    saveState();
+    saveState({ immediate: true });
     selectDeck(id);
     toast('Deck imported', 'success');
   } catch (e) {
@@ -1314,7 +1344,7 @@ async function _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes, de
       state.decks[id] = { id, name, text: text.slice(0, 80000), pages, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
     }
 
-    saveState();
+    saveState({ immediate: true });
     selectDeck(deckIdToUpdate || id);
     toast('Deck ready! ✦', 'success');
   } catch(e) {
@@ -1394,7 +1424,7 @@ async function confirmRegen() {
     const srData = {};
     flashcards.forEach((_, i) => { srData[i] = { ease: 2.5, interval: 1, reps: 0 }; });
     state.decks[pendingRegenDeckId] = { ...deck, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
-    saveState();
+    saveState({ immediate: true });
     selectDeck(pendingRegenDeckId);
     toast('Regenerated! ✦', 'success');
   } catch(e) {
@@ -1796,6 +1826,14 @@ setAuthMode('login');
 loadSession();
 window.addEventListener('focus', () => {
   if (hasAccountSync()) pullSyncedDecks({ quiet: true, force: true });
+});
+window.addEventListener('pagehide', () => {
+  if (!hasAccountSync() || !syncDirty) return;
+  const payload = JSON.stringify({
+    baseUpdatedAt: getSyncUpdatedAt(),
+    decks: state.decks,
+  });
+  navigator.sendBeacon('/api/sync/push', new Blob([payload], { type: 'application/json' }));
 });
 </script>
 </body>
