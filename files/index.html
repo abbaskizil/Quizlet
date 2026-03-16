@@ -781,12 +781,18 @@ let pendingRegenDeckId = null;
 let syncTimer = null;
 let syncDirty = false;
 let selectedAvatar = PROFILE_AVATARS[0];
+let deckMutationCounter = 0;
 
 // ─── PERSISTENCE ─────────────────────────────────────────────────
 function saveState({ immediate = false } = {}) {
+  deckMutationCounter++;
   persistLocalState();
-  if (immediate) syncNow({ quiet: true });
-  else scheduleSync();
+  if (immediate) {
+    syncDirty = true;
+    flushSync({ quiet: true });
+    return;
+  }
+  scheduleSync();
 }
 
 function persistLocalState() {
@@ -902,6 +908,7 @@ async function syncDecksToCloud({ quiet = false } = {}) {
 async function pullSyncedDecks({ quiet = false, force = false } = {}) {
   if (!hasAccountSync()) return false;
   if (syncDirty && !force) return false;
+  const pullVersion = deckMutationCounter;
 
   updateSyncStatus('Syncing…');
   try {
@@ -914,6 +921,12 @@ async function pullSyncedDecks({ quiet = false, force = false } = {}) {
     });
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) throw new Error(data.error?.message || `Sync error ${resp.status}`);
+
+    // Drop stale remote data if local decks changed while this pull was in flight.
+    if (deckMutationCounter !== pullVersion) {
+      updateSyncStatus();
+      return false;
+    }
 
     if (data.hasData) {
       state.decks = data.decks || {};
@@ -935,13 +948,20 @@ async function pullSyncedDecks({ quiet = false, force = false } = {}) {
   }
 }
 
-async function syncNow({ quiet = false } = {}) {
+async function flushSync({ quiet = false } = {}) {
   if (!hasAccountSync()) return;
   clearTimeout(syncTimer);
   if (syncDirty) {
     const result = await syncDecksToCloud({ quiet: true });
     if (!result.ok) return;
   }
+  updateSyncStatus();
+  if (!quiet) toast('Synced to cloud', 'success');
+}
+
+async function syncNow({ quiet = false } = {}) {
+  if (!hasAccountSync()) return;
+  await flushSync({ quiet: true });
   await pullSyncedDecks({ quiet, force: true });
 }
 
@@ -1110,7 +1130,13 @@ async function loadSession() {
     renderProfilePanel();
     updateSyncStatus();
     if (state.user) {
-      await pullSyncedDecks({ quiet: true, force: true });
+      renderSidebar();
+      renderMain();
+      const hadRemote = await pullSyncedDecks({ quiet: true, force: true });
+      if (!hadRemote) {
+        renderSidebar();
+        renderMain();
+      }
     } else {
       renderSidebar();
       renderMain();

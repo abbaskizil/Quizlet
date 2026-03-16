@@ -199,7 +199,7 @@ async function handleSyncPull(req, res) {
     row = await dataStore.getSyncProfile(syncHash);
   }
 
-  if (!row) {
+  if (!row || !hasRemoteDeckData(row)) {
     return sendJson(res, 200, { hasData: false, decks: {}, updatedAt: null });
   }
 
@@ -263,7 +263,7 @@ async function handleSyncPush(req, res) {
     });
   }
 
-  if (current) {
+  if (current && hasRemoteDeckData(current)) {
     if (baseUpdatedAt === null || current.updated_at > baseUpdatedAt) {
       return sendJson(res, 409, {
         error: {
@@ -993,6 +993,10 @@ function normalizeUpdatedAt(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function hasRemoteDeckData(row) {
+  return Number(row?.updated_at || 0) > 0;
 }
 
 function sanitizeDecksPayload(input) {
