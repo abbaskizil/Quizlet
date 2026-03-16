@@ -1110,7 +1110,7 @@
         <button class="btn-secondary" type="button" id="profile-remove-photo-btn" onclick="removeProfilePhoto()">Use Icon</button>
         <input type="file" id="profile-photo-input" accept="image/png,image/jpeg,image/webp,image/gif,image/heif,image/heic,.heif,.heic" onchange="handleProfilePhoto(this.files[0]); this.value='';"/>
       </div>
-      <div class="profile-photo-note">Photo upload replaces the icon until you switch back. Max 5 MB.</div>
+      <div class="profile-photo-note">Photo upload replaces the icon until you switch back. Images are center-cropped to a square avatar. Max 5 MB. HEIF/HEIC works only if your browser can decode it; JPEG/PNG is the safest choice.</div>
     </div>
 
     <div class="form-group">
@@ -1881,7 +1881,7 @@ function updateProfileAvatarPreview() {
   if (removeBtn) removeBtn.disabled = !isImageAvatar(selectedProfileAvatar);
 }
 
-function handleProfilePhoto(file) {
+async function handleProfilePhoto(file) {
   if (!file) return;
   if (!file.type.startsWith('image/')) {
     toast('Choose an image file', 'error');
@@ -1891,13 +1891,63 @@ function handleProfilePhoto(file) {
     toast('Photo must be 5 MB or smaller', 'error');
     return;
   }
-  const reader = new FileReader();
-  reader.onload = () => {
-    selectedProfileAvatar = String(reader.result || '');
+  try {
+    selectedProfileAvatar = await processProfilePhoto(file);
     renderProfileAvatarGrid();
     updateProfileAvatarPreview();
-  };
-  reader.readAsDataURL(file);
+  } catch (error) {
+    const isHeif = /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+    toast(
+      error.message || (isHeif
+        ? 'This browser could not decode that HEIF/HEIC image. Try JPEG or PNG instead.'
+        : 'Could not process this image'),
+      'error'
+    );
+  }
+}
+
+function processProfilePhoto(file) {
+  return loadImageFromFile(file).then(image => {
+    const size = 512;
+    const cropSize = Math.min(image.naturalWidth || image.width, image.naturalHeight || image.height);
+    const sourceX = Math.max(0, ((image.naturalWidth || image.width) - cropSize) / 2);
+    const sourceY = Math.max(0, ((image.naturalHeight || image.height) - cropSize) / 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Image processing is unavailable');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+      image,
+      sourceX,
+      sourceY,
+      cropSize,
+      cropSize,
+      0,
+      0,
+      size,
+      size
+    );
+    return canvas.toDataURL('image/jpeg', 0.9);
+  });
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('This browser could not decode that image file'));
+    };
+    image.src = objectUrl;
+  });
 }
 
 function removeProfilePhoto() {
