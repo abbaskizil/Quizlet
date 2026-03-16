@@ -13,7 +13,7 @@ AI-powered study tool: upload a PDF, get flashcards and quizzes instantly, with 
 - **User Profiles** — sign up with name, surname, username, optional nickname, and a chosen profile icon
 - **Automatic Cross-Device Sync** — signed-in users automatically sync decks through their own account on every device
 - **Persistent Decks** — decks are cached locally for fast reloads, and can sync through the backend database
-- **Import / Export** — move a deck between laptop, tablet, or desktop as a JSON file
+- **Custom Folders** — create your own folders, group decks inside them, and move decks between folders as needed
 - **Private API Key** — your Gemini key lives on the server, not in the browser
 - **Regenerate Anytime** — regenerate with new question counts without re-uploading
 - **Multiple Decks** — manage as many PDFs as you want
@@ -101,7 +101,7 @@ git push -u origin main
 7. Click **↺ Regenerate** anytime to get fresh questions
 8. Create an account and sign in to use the app
 9. Open the same account on your other devices and your decks will appear automatically
-10. Use **Export Active Deck** / **Import Deck JSON** as a manual backup when needed
+10. Create folders in the sidebar and move decks between them as your library grows
 
 ## Tech
 

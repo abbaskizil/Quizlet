@@ -107,13 +107,152 @@
     font-size: 13px;
   }
 
-  .sidebar-section-label {
+  .sidebar-section-row {
     padding: 16px 20px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .sidebar-section-label {
     font-size: 10px;
     font-family: var(--mono);
     color: var(--muted);
     letter-spacing: 1.5px;
     text-transform: uppercase;
+  }
+  .sidebar-add-folder {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    padding: 6px 10px;
+    font-size: 11px;
+    font-family: var(--mono);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .sidebar-add-folder:hover {
+    border-color: var(--accent2);
+    color: var(--text);
+    background: rgba(123,97,255,0.08);
+  }
+  .folder-groups {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 10px 10px;
+  }
+  .folder-group {
+    margin-bottom: 10px;
+  }
+  .folder-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .folder-toggle {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: var(--sans);
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .folder-toggle:hover {
+    background: var(--surface2);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .folder-group-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .folder-group-action {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .folder-group-action:hover {
+    border-color: var(--border);
+    color: var(--text);
+    background: var(--surface2);
+  }
+  .folder-group-action.delete:hover {
+    color: var(--danger);
+    background: rgba(255,95,109,0.08);
+    border-color: rgba(255,95,109,0.25);
+  }
+  .folder-toggle-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .folder-caret {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.15s ease;
+  }
+  .folder-group.collapsed .folder-caret {
+    transform: rotate(-90deg);
+  }
+  .folder-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .folder-count {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .folder-decks {
+    padding-top: 6px;
+  }
+  .folder-group.collapsed .folder-decks {
+    display: none;
+  }
+  .folder-empty {
+    padding: 10px 12px 4px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .folder-select-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .folder-select-row select {
+    flex: 1;
+  }
+  .folder-inline-btn {
+    white-space: nowrap;
+    padding: 10px 14px;
+  }
+  .folder-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
   }
 
   .profile-card {
@@ -165,7 +304,6 @@
     width: 100%;
   }
 
-  #deck-list { flex: 1; overflow-y: auto; padding: 0 10px 10px; }
   .deck-item {
     padding: 10px 12px;
     border-radius: 10px;
@@ -187,12 +325,35 @@
   .deck-item .deck-info { overflow: hidden; }
   .deck-item .deck-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .deck-item .deck-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
-  .deck-item .delete-deck {
-    margin-left: auto; opacity: 0; background: none; border: none;
-    color: var(--danger); cursor: pointer; font-size: 16px; padding: 2px 4px;
-    border-radius: 4px; flex-shrink: 0; transition: opacity 0.15s;
+  .deck-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s;
   }
-  .deck-item:hover .delete-deck { opacity: 1; }
+  .deck-item:hover .deck-actions,
+  .deck-item.active .deck-actions { opacity: 1; }
+  .deck-action {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: color 0.15s, background 0.15s;
+  }
+  .deck-action:hover {
+    color: var(--text);
+    background: rgba(123,97,255,0.08);
+  }
+  .deck-action.delete-deck:hover {
+    color: var(--danger);
+    background: rgba(255,95,109,0.08);
+  }
 
   .sidebar-bottom {
     padding: 12px;
@@ -709,18 +870,18 @@
         <p>AI-powered study tool</p>
       </div>
     </div>
-    <div class="sidebar-section-label">Your Decks</div>
-    <div id="deck-list"></div>
+    <div class="sidebar-section-row">
+      <div class="sidebar-section-label">Folders</div>
+      <button class="sidebar-add-folder" type="button" onclick="openFolderModal()">+ Folder</button>
+    </div>
+    <div class="folder-groups" id="deck-list"></div>
     <div class="sidebar-bottom">
       <div class="sidebar-tools">
         <button class="btn-upload-sidebar" onclick="openUploadModal()">
           <span>＋</span> New Deck from PDF
         </button>
-        <button class="btn-sidebar-secondary" onclick="openImportDeckPicker()">Import Deck JSON</button>
-        <button class="btn-sidebar-secondary" onclick="exportActiveDeck()">Export Active Deck</button>
       </div>
       <div class="sidebar-status" id="sync-status">Sign in required</div>
-      <input type="file" id="import-deck-input" accept=".json,application/json" style="display:none;" onchange="importDeckFile(this.files[0]); this.value='';"/>
     </div>
   </div>
 
@@ -814,6 +975,15 @@
     </div>
 
     <div class="form-group">
+      <label>FOLDER</label>
+      <div class="folder-select-row">
+        <select id="deck-folder-input"></select>
+        <button class="btn-secondary folder-inline-btn" type="button" onclick="openFolderModal('deck-folder-input')">New Folder</button>
+      </div>
+      <p class="folder-hint" id="deck-folder-hint"></p>
+    </div>
+
+    <div class="form-group">
       <label>FLASHCARDS TO GENERATE <span class="range-value" id="fc-count-val">20</span></label>
       <input type="range" id="fc-count" min="5" max="60" value="20"
         oninput="document.getElementById('fc-count-val').textContent = this.value"/>
@@ -900,15 +1070,61 @@
   </div>
 </div>
 
+<!-- FOLDER MODAL -->
+<div class="modal-overlay" id="folder-modal" style="display:none;">
+  <div class="modal">
+    <h3 id="folder-modal-title">Create Folder</h3>
+    <p class="modal-sub" id="folder-modal-sub">Create a folder to organize your decks</p>
+    <div class="form-group">
+      <label>FOLDER NAME</label>
+      <input type="text" id="folder-name-input" placeholder="e.g. Science"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeFolderModal()">Cancel</button>
+      <button class="btn-primary" id="folder-submit-btn" onclick="submitFolder()">Create Folder</button>
+    </div>
+  </div>
+</div>
+
+<!-- MOVE DECK MODAL -->
+<div class="modal-overlay" id="move-deck-modal" style="display:none;">
+  <div class="modal">
+    <h3>Move Deck</h3>
+    <p class="modal-sub" id="move-deck-sub">Choose a folder for this deck</p>
+    <div class="form-group">
+      <label>FOLDER</label>
+      <div class="folder-select-row">
+        <select id="move-folder-select"></select>
+        <button class="btn-secondary folder-inline-btn" type="button" onclick="openFolderModal('move-folder-select')">New Folder</button>
+      </div>
+      <p class="folder-hint" id="move-folder-hint"></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeMoveDeckModal()">Cancel</button>
+      <button class="btn-primary" id="move-deck-confirm-btn" onclick="confirmMoveDeck()">Move Deck</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const PROFILE_AVATARS = ['🦊', '🦉', '🐼', '🐯', '🐬', '🦁', '🐻', '🦄', '🐙', '🐧'];
+const DEFAULT_FOLDER_ID = 'folder_general';
+const DEFAULT_FOLDER_NAME = 'General';
+const LEGACY_FOLDER_NAME_MAP = {
+  cloud: 'Cloud',
+  ai: 'AI',
+  math: 'Math',
+  economics: 'Economics',
+  unsorted: DEFAULT_FOLDER_NAME,
+};
 
 // ─── STATE ───────────────────────────────────────────────────────
 let state = {
-  decks: {},       // { id: { id, name, text, pages, flashcards, quiz, quizConfig, srData } }
+  decks: {},       // { id: { id, name, folderId, text, pages, flashcards, quiz, quizConfig, srData } }
+  folders: {},     // { id: { id, name } }
   activeDeck: null,
   activeTab: 'flashcards',
   quizState: null,
@@ -917,6 +1133,7 @@ let state = {
   user: null,
   authMode: 'login',
   sidebarOpen: window.innerWidth > 900,
+  collapsedFolders: {},
 };
 
 let pendingFile = null;
@@ -925,6 +1142,9 @@ let syncTimer = null;
 let syncDirty = false;
 let selectedAvatar = PROFILE_AVATARS[0];
 let deckMutationCounter = 0;
+let pendingFolderSelectId = '';
+let pendingMoveDeckId = null;
+let pendingFolderEditId = null;
 
 // ─── PERSISTENCE ─────────────────────────────────────────────────
 function saveState({ immediate = false } = {}) {
@@ -939,36 +1159,319 @@ function saveState({ immediate = false } = {}) {
 }
 
 function persistLocalState() {
-  localStorage.setItem('studyforge_decks', JSON.stringify(state.decks));
+  localStorage.setItem('studyforge_decks', JSON.stringify(buildPersistedPayload()));
   localStorage.setItem('studyforge_ui', JSON.stringify({
     activeDeck: state.activeDeck,
     activeTab: state.activeTab,
     sidebarOpen: state.sidebarOpen,
+    collapsedFolders: state.collapsedFolders,
   }));
 }
 
 function loadState() {
   try {
     const d = localStorage.getItem('studyforge_decks');
-    if (d) state.decks = JSON.parse(d);
+    if (d) {
+      const normalized = normalizePersistedPayload(JSON.parse(d));
+      state.decks = normalized.decks;
+      state.folders = normalized.folders;
+    }
   } catch(e) {}
   try {
     const ui = JSON.parse(localStorage.getItem('studyforge_ui') || '{}');
     if (ui.activeDeck) state.activeDeck = ui.activeDeck;
     if (ui.activeTab === 'quiz' || ui.activeTab === 'flashcards') state.activeTab = ui.activeTab;
     if (typeof ui.sidebarOpen === 'boolean') state.sidebarOpen = ui.sidebarOpen;
+    if (ui.collapsedFolders && typeof ui.collapsedFolders === 'object') state.collapsedFolders = ui.collapsedFolders;
   } catch(e) {}
+  expandFolderForDeck(state.activeDeck);
   syncSidebarForViewport();
 }
 
 function resetDeckState() {
   state.decks = {};
+  state.folders = {};
   state.activeDeck = null;
   state.activeTab = 'flashcards';
   state.quizState = null;
   state.cardLanguage = {};
   state.cardFlipped = {};
+  state.collapsedFolders = {};
   persistLocalState();
+}
+
+function buildPersistedPayload() {
+  return {
+    decks: state.decks,
+    folders: state.folders,
+  };
+}
+
+function normalizeFolders(rawFolders) {
+  if (!rawFolders || typeof rawFolders !== 'object' || Array.isArray(rawFolders)) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(rawFolders)
+      .map(([id, folder]) => {
+        const normalizedId = String(folder?.id || id || '').trim();
+        const name = String(folder?.name || folder?.label || '').trim();
+        if (!normalizedId || !name) return null;
+        return [normalizedId, { id: normalizedId, name: name.slice(0, 40) }];
+      })
+      .filter(Boolean),
+  );
+}
+
+function humanizeFolderId(folderId) {
+  const id = String(folderId || '').trim();
+  if (!id) return 'Folder';
+  if (LEGACY_FOLDER_NAME_MAP[id]) return LEGACY_FOLDER_NAME_MAP[id];
+  return id
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, ch => ch.toUpperCase()) || 'Folder';
+}
+
+function ensureDefaultFolder(folders) {
+  if (!folders[DEFAULT_FOLDER_ID]) {
+    folders[DEFAULT_FOLDER_ID] = { id: DEFAULT_FOLDER_ID, name: DEFAULT_FOLDER_NAME };
+  }
+  return DEFAULT_FOLDER_ID;
+}
+
+function normalizeDecks(rawDecks, folders) {
+  const decks = rawDecks && typeof rawDecks === 'object' ? rawDecks : {};
+  return Object.fromEntries(
+    Object.entries(decks).map(([id, deck]) => [
+      id,
+      (() => {
+        const normalizedId = deck?.id || id;
+        let folderId = String(deck?.folderId || '').trim();
+        if (folderId === 'unsorted') {
+          folderId = '';
+        }
+        if (folderId && !folders[folderId]) {
+          folders[folderId] = { id: folderId, name: humanizeFolderId(folderId) };
+        }
+        if (!folderId || !folders[folderId]) {
+          folderId = ensureDefaultFolder(folders);
+        }
+        return {
+          ...deck,
+          id: normalizedId,
+          folderId,
+        };
+      })(),
+    ]),
+  );
+}
+
+function normalizePersistedPayload(raw) {
+  let rawDecks = raw;
+  let rawFolders = {};
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && ('decks' in raw || 'folders' in raw)) {
+    rawDecks = raw.decks;
+    rawFolders = raw.folders;
+  }
+  const folders = normalizeFolders(rawFolders);
+  const decks = normalizeDecks(rawDecks, folders);
+  return { decks, folders };
+}
+
+function getSortedFolders() {
+  return Object.values(state.folders).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getDeckFolderId(deck) {
+  const folderId = String(deck?.folderId || '').trim();
+  return state.folders[folderId] ? folderId : getDefaultFolderId();
+}
+
+function getDefaultFolderId() {
+  return getSortedFolders()[0]?.id || '';
+}
+
+function hasUserFolders() {
+  return getSortedFolders().length > 0;
+}
+
+function getSidebarFolders() {
+  return getSortedFolders();
+}
+
+function isFolderCollapsed(folderId) {
+  return Boolean(state.collapsedFolders?.[folderId]);
+}
+
+function expandFolderForDeck(deckId) {
+  const deck = state.decks[deckId];
+  if (!deck) return;
+  state.collapsedFolders[getDeckFolderId(deck)] = false;
+}
+
+function toggleFolderCollapse(folderId) {
+  state.collapsedFolders[folderId] = !isFolderCollapsed(folderId);
+  persistLocalState();
+  renderSidebar();
+}
+
+function renderFolderSelect(selectId, selectedId = '') {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const folders = getSortedFolders();
+  if (!folders.length) {
+    select.innerHTML = '<option value="">Create a folder first</option>';
+    select.disabled = true;
+  } else {
+    select.disabled = false;
+    select.innerHTML = folders.map(folder => `
+      <option value="${folder.id}">${escHtml(folder.name)}</option>
+    `).join('');
+    select.value = folders.some(folder => folder.id === selectedId) ? selectedId : folders[0].id;
+  }
+}
+
+function updateFolderHints() {
+  const hint = hasUserFolders()
+    ? 'Choose an existing folder or create a new one.'
+    : 'Create your first folder before generating or moving a deck.';
+  const uploadHint = document.getElementById('deck-folder-hint');
+  const moveHint = document.getElementById('move-folder-hint');
+  if (uploadHint) uploadHint.textContent = hint;
+  if (moveHint) moveHint.textContent = hint;
+}
+
+function updateGenerateButtonState() {
+  const folderSelect = document.getElementById('deck-folder-input');
+  const canGenerate = Boolean(
+    pendingFile &&
+    folderSelect &&
+    !folderSelect.disabled &&
+    folderSelect.value,
+  );
+  document.getElementById('generate-btn').disabled = !canGenerate;
+}
+
+function openFolderModal(selectId = '') {
+  pendingFolderSelectId = selectId;
+  pendingFolderEditId = null;
+  document.getElementById('folder-modal-title').textContent = 'Create Folder';
+  document.getElementById('folder-modal-sub').textContent = 'Create a folder to organize your decks';
+  document.getElementById('folder-submit-btn').textContent = 'Create Folder';
+  document.getElementById('folder-name-input').value = '';
+  document.getElementById('folder-modal').style.display = 'flex';
+}
+
+function closeFolderModal() {
+  document.getElementById('folder-modal').style.display = 'none';
+  pendingFolderSelectId = '';
+  pendingFolderEditId = null;
+}
+
+function openRenameFolderModal(event, folderId) {
+  event.stopPropagation();
+  const folder = state.folders[folderId];
+  if (!folder) return;
+  pendingFolderSelectId = '';
+  pendingFolderEditId = folderId;
+  document.getElementById('folder-modal-title').textContent = 'Rename Folder';
+  document.getElementById('folder-modal-sub').textContent = `Update the name for "${folder.name}"`;
+  document.getElementById('folder-submit-btn').textContent = 'Save Folder';
+  document.getElementById('folder-name-input').value = folder.name;
+  document.getElementById('folder-modal').style.display = 'flex';
+}
+
+function submitFolder() {
+  const input = document.getElementById('folder-name-input');
+  const name = input.value.trim().replace(/\s+/g, ' ');
+  if (!name) {
+    toast('Folder name is required', 'error');
+    return;
+  }
+  const exists = Object.values(state.folders).some(folder =>
+    folder.id !== pendingFolderEditId && folder.name.toLowerCase() === name.toLowerCase(),
+  );
+  if (exists) {
+    toast('Folder already exists', 'error');
+    return;
+  }
+  const folderId = pendingFolderEditId || ('fld_' + Date.now());
+  const isRename = Boolean(pendingFolderEditId);
+  state.folders[folderId] = { id: folderId, name: name.slice(0, 40) };
+  if (!isRename) state.collapsedFolders[folderId] = false;
+  saveState({ immediate: true });
+  renderSidebar();
+  renderFolderSelect('deck-folder-input', folderId);
+  renderFolderSelect('move-folder-select', folderId);
+  updateFolderHints();
+  updateGenerateButtonState();
+  if (pendingFolderSelectId && !isRename) {
+    renderFolderSelect(pendingFolderSelectId, folderId);
+  }
+  closeFolderModal();
+  toast(isRename ? 'Folder renamed' : 'Folder created', 'success');
+}
+
+function deleteFolder(event, folderId) {
+  event.stopPropagation();
+  const folder = state.folders[folderId];
+  if (!folder) return;
+  const affectedDeckIds = Object.keys(state.decks).filter(deckId => getDeckFolderId(state.decks[deckId]) === folderId);
+  if (affectedDeckIds.length) {
+    toast('Move or delete the decks in this folder first', 'error');
+    return;
+  }
+  if (!confirm(`Delete "${folder.name}"?`)) return;
+  delete state.folders[folderId];
+  delete state.collapsedFolders[folderId];
+  saveState({ immediate: true });
+  renderSidebar();
+  renderFolderSelect('deck-folder-input', getDefaultFolderId());
+  renderFolderSelect('move-folder-select', getDefaultFolderId());
+  updateFolderHints();
+  updateGenerateButtonState();
+  if (pendingMoveDeckId && document.getElementById('move-deck-modal').style.display === 'flex') {
+    document.getElementById('move-deck-confirm-btn').disabled = !hasUserFolders();
+  }
+  toast('Folder deleted', 'success');
+}
+
+function openMoveDeckModal(event, deckId) {
+  event.stopPropagation();
+  pendingMoveDeckId = deckId;
+  const deck = state.decks[deckId];
+  if (!deck) return;
+  document.getElementById('move-deck-sub').textContent = `Choose a folder for "${deck.name}"`;
+  renderFolderSelect('move-folder-select', getDeckFolderId(deck));
+  updateFolderHints();
+  document.getElementById('move-deck-confirm-btn').disabled = !hasUserFolders();
+  document.getElementById('move-deck-modal').style.display = 'flex';
+}
+
+function closeMoveDeckModal() {
+  document.getElementById('move-deck-modal').style.display = 'none';
+  pendingMoveDeckId = null;
+}
+
+function confirmMoveDeck() {
+  if (!pendingMoveDeckId) return;
+  const folderId = document.getElementById('move-folder-select').value;
+  if (!folderId || !state.folders[folderId]) {
+    toast('Create a folder first', 'error');
+    return;
+  }
+  state.decks[pendingMoveDeckId] = {
+    ...state.decks[pendingMoveDeckId],
+    folderId,
+  };
+  expandFolderForDeck(pendingMoveDeckId);
+  saveState({ immediate: true });
+  renderSidebar();
+  renderMain();
+  closeMoveDeckModal();
+  toast('Deck moved', 'success');
 }
 
 function isMobileLayout() {
@@ -1050,7 +1553,7 @@ async function syncDecksToCloud({ quiet = false } = {}) {
   try {
     const payload = {
       baseUpdatedAt: getSyncUpdatedAt(),
-      decks: state.decks,
+      decks: buildPersistedPayload(),
     };
     const resp = await fetch('/api/sync/push', {
       method: 'POST',
@@ -1105,7 +1608,9 @@ async function pullSyncedDecks({ quiet = false, force = false } = {}) {
     }
 
     if (data.hasData) {
-      state.decks = data.decks || {};
+      const normalized = normalizePersistedPayload(data.decks);
+      state.decks = normalized.decks;
+      state.folders = normalized.folders;
       setSyncUpdatedAt(data.updatedAt || null);
       persistLocalState();
       renderSidebar();
@@ -1336,24 +1841,52 @@ function toast(msg, type='') {
 function renderSidebar() {
   renderProfilePanel();
   const list = document.getElementById('deck-list');
-  const decks = Object.values(state.decks);
-  if (!decks.length) {
-    list.innerHTML = '<p style="padding:12px 20px;font-size:12px;color:var(--muted);">No decks yet</p>';
+  const folders = getSidebarFolders();
+  if (!folders.length) {
+    list.innerHTML = '<p style="padding:12px 20px;font-size:12px;color:var(--muted);">Create a folder to start organizing your decks.</p>';
     return;
   }
-  list.innerHTML = decks.map(d => `
-    <div class="deck-item ${d.id === state.activeDeck ? 'active' : ''}" onclick="selectDeck('${d.id}')">
-      <div class="deck-icon">📖</div>
-      <div class="deck-info">
-        <div class="deck-name">${d.name}</div>
-        <div class="deck-meta">${d.flashcards?.length || 0} cards · ${d.quiz?.length || 0} Qs</div>
-      </div>
-      <button class="delete-deck" onclick="deleteDeck(event,'${d.id}')">×</button>
-    </div>
-  `).join('');
+  list.innerHTML = folders.map(folder => {
+    const decks = Object.values(state.decks)
+      .filter(deck => getDeckFolderId(deck) === folder.id)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const isCollapsed = isFolderCollapsed(folder.id);
+    return `
+      <div class="folder-group ${isCollapsed ? 'collapsed' : ''}">
+        <div class="folder-header">
+          <button class="folder-toggle" type="button" onclick="toggleFolderCollapse('${folder.id}')">
+            <div class="folder-toggle-main">
+              <span class="folder-caret">▾</span>
+              <span class="folder-name">${escHtml(folder.name)}</span>
+            </div>
+            <span class="folder-count">${decks.length}</span>
+          </button>
+          <div class="folder-group-actions">
+            <button class="folder-group-action" type="button" aria-label="Rename folder" onclick="openRenameFolderModal(event,'${folder.id}')">✎</button>
+            <button class="folder-group-action delete" type="button" aria-label="Delete folder" onclick="deleteFolder(event,'${folder.id}')">×</button>
+          </div>
+        </div>
+        <div class="folder-decks">
+          ${decks.length ? decks.map(d => `
+            <div class="deck-item ${d.id === state.activeDeck ? 'active' : ''}" onclick="selectDeck('${d.id}')">
+              <div class="deck-icon">📖</div>
+              <div class="deck-info">
+                <div class="deck-name">${escHtml(d.name)}</div>
+                <div class="deck-meta">${d.flashcards?.length || 0} cards · ${d.quiz?.length || 0} Qs</div>
+              </div>
+              <div class="deck-actions" onclick="event.stopPropagation()">
+                <button class="deck-action" type="button" aria-label="Move deck" onclick="openMoveDeckModal(event,'${d.id}')">⇄</button>
+                <button class="deck-action delete-deck" type="button" aria-label="Delete deck" onclick="deleteDeck(event,'${d.id}')">×</button>
+              </div>
+            </div>
+          `).join('') : '<div class="folder-empty">No decks yet</div>'}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function selectDeck(id) {
+  expandFolderForDeck(id);
   state.activeDeck = id;
   state.activeTab = 'flashcards';
   state.quizState = null;
@@ -1389,77 +1922,17 @@ function openUploadModal() {
   pendingFile = null;
   document.getElementById('drop-text').innerHTML = '<strong>Click or drag</strong> a PDF here';
   document.getElementById('deck-name-input').value = '';
-  document.getElementById('generate-btn').disabled = true;
+  const preferredFolderId = state.activeDeck && state.decks[state.activeDeck]
+    ? getDeckFolderId(state.decks[state.activeDeck])
+    : getDefaultFolderId();
+  renderFolderSelect('deck-folder-input', preferredFolderId);
+  updateFolderHints();
+  updateGenerateButtonState();
   document.getElementById('upload-modal').style.display = 'flex';
 }
 function closeUploadModal() {
   document.getElementById('upload-modal').style.display = 'none';
   pendingFile = null;
-}
-
-function openImportDeckPicker() {
-  if (!state.user) {
-    openAuthModal('login');
-    return;
-  }
-  document.getElementById('import-deck-input').click();
-}
-
-async function importDeckFile(file) {
-  if (!state.user) {
-    openAuthModal('login');
-    return;
-  }
-  if (!file) return;
-
-  try {
-    const raw = await file.text();
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.flashcards) || !Array.isArray(parsed.quiz)) {
-      throw new Error('Invalid deck file');
-    }
-
-    const id = 'deck_' + Date.now();
-    state.decks[id] = {
-      id,
-      name: parsed.name || file.name.replace(/\.json$/i, ''),
-      text: parsed.text || '',
-      flashcards: parsed.flashcards,
-      quiz: parsed.quiz,
-      quizConfig: {
-        choiceCount: parsed.quizConfig?.choiceCount || 4,
-        qTypes: parsed.quizConfig?.qTypes || 'mixed',
-      },
-      srData: parsed.srData || {},
-    };
-    saveState({ immediate: true });
-    selectDeck(id);
-    toast('Deck imported', 'success');
-  } catch (e) {
-    toast(e.message || 'Import failed', 'error');
-  }
-}
-
-function exportActiveDeck() {
-  if (!state.user) {
-    openAuthModal('login');
-    return;
-  }
-  const deck = state.decks[state.activeDeck];
-  if (!deck) {
-    toast('Open a deck first', 'error');
-    return;
-  }
-
-  const blob = new Blob([JSON.stringify(deck, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${deck.name.replace(/[^a-z0-9-_]+/gi, '_').toLowerCase() || 'studyforge-deck'}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 function handleFileSelect(file) {
@@ -1469,7 +1942,7 @@ function handleFileSelect(file) {
   if (!document.getElementById('deck-name-input').value) {
     document.getElementById('deck-name-input').value = file.name.replace(/\.pdf$/i,'');
   }
-  document.getElementById('generate-btn').disabled = false;
+  updateGenerateButtonState();
 }
 
 // Drag & drop
@@ -1503,16 +1976,17 @@ async function startGeneration() {
   if (!pendingFile) return;
   const file = pendingFile;
   const name = document.getElementById('deck-name-input').value.trim() || pendingFile.name.replace(/\.pdf$/i,'');
+  const folderId = document.getElementById('deck-folder-input').value;
   const fcCount = parseInt(document.getElementById('fc-count').value);
   const qqCount = parseInt(document.getElementById('qq-count').value);
   const choiceCount = parseInt(document.getElementById('choice-count').value);
   const qTypes = document.getElementById('q-types').value;
 
   closeUploadModal();
-  _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes);
+  _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes);
 }
 
-async function _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes, deckIdToUpdate=null) {
+async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes, deckIdToUpdate=null) {
   if (!file) throw new Error('No PDF file selected.');
   // Show loading
   state.activeDeck = null;
@@ -1547,7 +2021,17 @@ async function _doGenerate(file, name, fcCount, qqCount, choiceCount, qTypes, de
         srData,
       };
     } else {
-      state.decks[id] = { id, name, text: text.slice(0, 80000), pages, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
+      state.decks[id] = {
+        id,
+        name,
+        folderId: state.folders[folderId] ? folderId : getDefaultFolderId(),
+        text: text.slice(0, 80000),
+        pages,
+        flashcards,
+        quiz,
+        quizConfig: { choiceCount, qTypes },
+        srData,
+      };
     }
 
     saveState({ immediate: true });
@@ -2036,6 +2520,9 @@ function escAttr(str) {
 
 // ─── INIT ─────────────────────────────────────────────────────────
 loadState();
+renderFolderSelect('deck-folder-input', getDefaultFolderId());
+renderFolderSelect('move-folder-select', getDefaultFolderId());
+updateFolderHints();
 renderSidebar();
 renderMain();
 updateSyncStatus();
@@ -2055,7 +2542,7 @@ window.addEventListener('pagehide', () => {
   if (!hasAccountSync() || !syncDirty) return;
   const payload = JSON.stringify({
     baseUpdatedAt: getSyncUpdatedAt(),
-    decks: state.decks,
+    decks: buildPersistedPayload(),
   });
   navigator.sendBeacon('/api/sync/push', new Blob([payload], { type: 'application/json' }));
 });
