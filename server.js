@@ -113,13 +113,15 @@ async function handleGenerate(req, res) {
   const qqCount = clampInteger(body.qqCount, 5, 40);
   const choiceCount = clampInteger(body.choiceCount, 2, 5);
   const qTypes = ['mixed', 'mcq', 'fill'].includes(body.qTypes) ? body.qTypes : 'mixed';
+  const instructions = String(body.instructions || '').trim().slice(0, 2000);
+  const sourceLabel = normalizeSourceLabel(body.sourceLabel);
 
   if (!text) {
-    return sendJson(res, 400, { error: { message: 'PDF text is required.' } });
+    return sendJson(res, 400, { error: { message: 'Document text is required.' } });
   }
 
   const pagePlan = allocateFlashcardsByPage(pages, fcCount);
-  const prompt = buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qTypes);
+  const prompt = buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qTypes, instructions, sourceLabel);
   const schema = buildResponseSchema();
 
   const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`, {
@@ -468,8 +470,11 @@ function buildResponseSchema() {
   };
 }
 
-function buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qTypes) {
+function buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qTypes, instructions, sourceLabel) {
   const quizExcerpt = text.slice(0, 24000);
+  const sourceUnit = normalizeSourceLabel(sourceLabel);
+  const sourceUnitUpper = sourceUnit.toUpperCase();
+  const sourceUnitLower = sourceUnit.toLowerCase();
   const selectedPages = pagePlan
     .filter(item => item.count > 0)
     .map(item => ({
@@ -479,10 +484,10 @@ function buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qType
     }));
   const pageBudget = Math.max(400, Math.floor(42000 / Math.max(selectedPages.length, 1)));
   const pagePlanText = selectedPages
-    .map(page => `- Page ${page.pageNumber}: ${page.count} flashcard${page.count === 1 ? '' : 's'}`)
+    .map(page => `- ${sourceUnit} ${page.pageNumber}: ${page.count} flashcard${page.count === 1 ? '' : 's'}`)
     .join('\n');
   const pageText = selectedPages
-    .map(page => `[Page ${page.pageNumber} | ${page.count} flashcard${page.count === 1 ? '' : 's'}]\n${page.text.slice(0, pageBudget)}`)
+    .map(page => `[${sourceUnit} ${page.pageNumber} | ${page.count} flashcard${page.count === 1 ? '' : 's'}]\n${page.text.slice(0, pageBudget)}`)
     .join('\n\n');
 
   let qTypeInstructions = '';
@@ -493,6 +498,9 @@ function buildPrompt(text, pages, pagePlan, fcCount, qqCount, choiceCount, qType
   } else {
     qTypeInstructions = `Mix question types: about 70% "mcq" with exactly ${choiceCount} choices, and 30% "fill" (fill-in-the-blank, no choices needed).`;
   }
+  const instructionsBlock = instructions
+    ? `\nUSER STUDY GUIDANCE:\n${instructions}\n\nFollow the user guidance when it does not conflict with the source text, JSON schema, or exact counts.`
+    : '';
   return `You are a study tool. Analyze the following educational text and generate study materials.
 
 Return ONLY valid JSON with no markdown, no explanation, no backticks.
@@ -510,10 +518,10 @@ Format:
 
 Rules:
 - Generate exactly ${fcCount} flashcards.
-- Flashcards must follow the PAGE PLAN exactly.
-- Each flashcard must be grounded in the text of its own page only.
-- Use quality mode: if a page has weak or low-information text, it is acceptable for that page to have 0 flashcards unless it appears in the PAGE PLAN.
-- Each flashcard must include a numeric "page" field matching the source page.
+- Flashcards must follow the ${sourceUnitUpper} PLAN exactly.
+- Each flashcard must be grounded in the text of its own ${sourceUnitLower} only.
+- Use quality mode: if a ${sourceUnitLower} has weak or low-information text, it is acceptable for that ${sourceUnitLower} to have 0 flashcards unless it appears in the ${sourceUnitUpper} PLAN.
+- Each flashcard must include a numeric "page" field matching the source ${sourceUnitLower}.
 - Each flashcard must include:
   - "definition": a clear English explanation
   - "definitionTr": a natural Turkish explanation of the same concept
@@ -525,14 +533,23 @@ Rules:
 - Questions should test genuine understanding, not just recall.
 - Explanations should be 1-2 sentences explaining why the answer is correct.
 
-PAGE PLAN:
+${sourceUnitUpper} PLAN:
 ${pagePlanText}
 
-PAGE EXCERPTS FOR FLASHCARDS:
+${sourceUnitUpper} EXCERPTS FOR FLASHCARDS:
 ${pageText}
+
+${instructionsBlock}
 
 DOCUMENT EXCERPT FOR QUIZ:
 ${quizExcerpt}`;
+}
+
+function normalizeSourceLabel(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'slide') return 'Slide';
+  if (normalized === 'section') return 'Section';
+  return 'Page';
 }
 
 function normalizePages(rawPages, fallbackText) {

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>StudyForge</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
@@ -605,12 +606,17 @@
   /* ─── GENERATION MODAL ─── */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: flex-start; justify-content: center;
     z-index: 100; backdrop-filter: blur(4px);
+    padding: 24px 16px;
+    overflow-y: auto;
   }
   .modal {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; padding: 32px; width: 420px; max-width: 95vw;
+    border-radius: 20px; padding: 32px; width: 480px; max-width: 95vw;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    overflow-x: hidden;
   }
   .modal h3 { font-family: var(--serif); font-size: 22px; font-style: italic; margin-bottom: 6px; }
   .modal .modal-sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; font-family: var(--mono); }
@@ -628,6 +634,70 @@
   .range-value { font-family: var(--mono); color: var(--accent); font-size: 14px; float: right; }
 
   .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .chat-bar {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    align-items: start;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(123,97,255,0.1), rgba(123,97,255,0.04));
+  }
+  .chat-bar-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(200,240,96,0.14);
+    color: var(--accent);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .chat-bar-copy {
+    min-width: 0;
+  }
+  .chat-bar-title {
+    font-size: 12px;
+    font-family: var(--mono);
+    color: var(--accent);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .chat-bar-copy p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .chat-bar textarea {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(14,14,16,0.55);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .chat-bar textarea:focus {
+    border-color: var(--accent2);
+    background: rgba(14,14,16,0.8);
+  }
+  .chat-bar-note {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
   .auth-switch {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -998,7 +1068,7 @@
     <div class="sidebar-bottom">
       <div class="sidebar-tools">
         <button class="btn-upload-sidebar" onclick="openUploadModal()">
-          <span>＋</span> New Deck from PDF
+          <span>＋</span> New Deck from File
         </button>
       </div>
       <div class="sidebar-status" id="sync-status">Sign in required</div>
@@ -1023,9 +1093,9 @@
       <div id="welcome">
         <div class="welcome-icon">📚</div>
         <h2>Start studying smarter</h2>
-        <p>Upload a PDF to automatically generate flashcards and quizzes powered by Gemini through your private backend.</p>
+        <p>Upload a PDF, Word document, or PowerPoint to generate flashcards and quizzes powered by Gemini.</p>
         <button class="btn-upload-sidebar" style="max-width:240px;" onclick="openUploadModal()">
-          <span>＋</span> Upload your first PDF
+          <span>＋</span> Upload your first file
         </button>
       </div>
     </div>
@@ -1140,14 +1210,14 @@
 <div class="modal-overlay" id="upload-modal" style="display:none;">
   <div class="modal">
     <h3>New Study Deck</h3>
-    <p class="modal-sub">Upload a PDF and configure generation</p>
+    <p class="modal-sub">Upload a study file and configure generation</p>
 
     <div class="form-group">
-      <label>PDF FILE</label>
+      <label>STUDY FILE</label>
       <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-        <p id="drop-text"><strong>Click or drag</strong> a PDF here</p>
+        <p id="drop-text"><strong>Click or drag</strong> a PDF, DOCX, or PPTX here</p>
       </div>
-      <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this.files[0])"/>
+      <input type="file" id="file-input" accept=".pdf,.docx,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation" onchange="handleFileSelect(this.files[0])"/>
     </div>
 
     <div class="form-group">
@@ -1193,6 +1263,19 @@
         <option value="mcq">Multiple Choice only</option>
         <option value="fill">Fill-in-the-blank only</option>
       </select>
+    </div>
+
+    <div class="form-group">
+      <label>FLASHCARD CHAT BAR</label>
+      <div class="chat-bar">
+        <div class="chat-bar-icon">✦</div>
+        <div class="chat-bar-copy">
+          <div class="chat-bar-title">Generation Guidance</div>
+          <p>Tell the model what to emphasize. Example: focus on formulas, keep answers short, or generate exam-style cards.</p>
+          <textarea id="generation-instructions" placeholder="Example: Prioritize definitions and formulas, avoid trivia, and keep each card concise."></textarea>
+          <div class="chat-bar-note">These instructions are applied when the deck is generated and saved with the deck for regeneration.</div>
+        </div>
+      </div>
     </div>
 
     <div class="modal-actions">
@@ -1244,6 +1327,18 @@
         <option value="fill">Fill-in-the-blank only</option>
       </select>
     </div>
+    <div class="form-group">
+      <label>FLASHCARD CHAT BAR</label>
+      <div class="chat-bar">
+        <div class="chat-bar-icon">✦</div>
+        <div class="chat-bar-copy">
+          <div class="chat-bar-title">Generation Guidance</div>
+          <p>Update the deck’s study instructions before regenerating.</p>
+          <textarea id="regen-instructions" placeholder="Example: Make the cards more exam-focused and emphasize cause-effect relationships."></textarea>
+          <div class="chat-bar-note">Leave it blank if you want standard generation with no extra guidance.</div>
+        </div>
+      </div>
+    </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeRegenModal()">Cancel</button>
       <button class="btn-primary" onclick="confirmRegen()">Regenerate ✦</button>
@@ -1294,6 +1389,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs
 const PROFILE_AVATARS = ['🦊', '🦉', '🐼', '🐯', '🐬', '🦁', '🐻', '🦄', '🐙', '🐧'];
 const DEFAULT_FOLDER_ID = 'folder_general';
 const DEFAULT_FOLDER_NAME = 'General';
+const SUPPORTED_STUDY_EXTENSIONS = ['.pdf', '.docx', '.pptx'];
 const LEGACY_FOLDER_NAME_MAP = {
   cloud: 'Cloud',
   ai: 'AI',
@@ -1304,7 +1400,7 @@ const LEGACY_FOLDER_NAME_MAP = {
 
 // ─── STATE ───────────────────────────────────────────────────────
 let state = {
-  decks: {},       // { id: { id, name, folderId, text, pages, flashcards, quiz, quizConfig, srData } }
+  decks: {},       // { id: { id, name, folderId, text, pages, flashcards, quiz, quizConfig, customInstructions, sourceLabel, srData } }
   folders: {},     // { id: { id, name } }
   activeDeck: null,
   activeTab: 'flashcards',
@@ -1328,6 +1424,60 @@ let deckMutationCounter = 0;
 let pendingFolderSelectId = '';
 let pendingMoveDeckId = null;
 let pendingFolderEditId = null;
+
+function getFileExtension(fileName = '') {
+  const value = String(fileName || '').toLowerCase();
+  const dotIndex = value.lastIndexOf('.');
+  return dotIndex >= 0 ? value.slice(dotIndex) : '';
+}
+
+function getStudyFileMeta(fileOrName) {
+  const ext = getFileExtension(typeof fileOrName === 'string' ? fileOrName : fileOrName?.name);
+  if (ext === '.docx') {
+    return {
+      kind: 'docx',
+      displayName: 'Word document',
+      sourceLabel: 'Section',
+      loadingLabel: 'Reading Word document…',
+    };
+  }
+  if (ext === '.pptx') {
+    return {
+      kind: 'pptx',
+      displayName: 'PowerPoint',
+      sourceLabel: 'Slide',
+      loadingLabel: 'Reading PowerPoint…',
+    };
+  }
+  return {
+    kind: 'pdf',
+    displayName: 'PDF',
+    sourceLabel: 'Page',
+    loadingLabel: 'Reading PDF…',
+  };
+}
+
+function isSupportedStudyFile(file) {
+  return SUPPORTED_STUDY_EXTENSIONS.includes(getFileExtension(file?.name));
+}
+
+function stripStudyFileExtension(fileName = '') {
+  return String(fileName || '').replace(/\.(pdf|docx|pptx)$/i, '');
+}
+
+function readGenerationInstructions(inputId) {
+  return String(document.getElementById(inputId)?.value || '').trim().slice(0, 2000);
+}
+
+function getDeckSourceLabel(deck) {
+  return String(deck?.sourceLabel || '').trim() || 'Page';
+}
+
+function shortenText(text, maxLength = 180) {
+  const value = String(text || '').trim();
+  if (value.length <= maxLength) return value;
+  return value.slice(0, maxLength - 1).trimEnd() + '…';
+}
 
 // ─── PERSISTENCE ─────────────────────────────────────────────────
 function saveState({ immediate = false } = {}) {
@@ -2255,8 +2405,9 @@ function openUploadModal() {
     return;
   }
   pendingFile = null;
-  document.getElementById('drop-text').innerHTML = '<strong>Click or drag</strong> a PDF here';
+  document.getElementById('drop-text').innerHTML = '<strong>Click or drag</strong> a PDF, DOCX, or PPTX here';
   document.getElementById('deck-name-input').value = '';
+  document.getElementById('generation-instructions').value = '';
   const preferredFolderId = state.activeDeck && state.decks[state.activeDeck]
     ? getDeckFolderId(state.decks[state.activeDeck])
     : getDefaultFolderId();
@@ -2272,10 +2423,14 @@ function closeUploadModal() {
 
 function handleFileSelect(file) {
   if (!file) return;
+  if (!isSupportedStudyFile(file)) {
+    toast('Use a PDF, DOCX, or PPTX file', 'error');
+    return;
+  }
   pendingFile = file;
   document.getElementById('drop-text').innerHTML = `<strong>✓ ${file.name}</strong>`;
   if (!document.getElementById('deck-name-input').value) {
-    document.getElementById('deck-name-input').value = file.name.replace(/\.pdf$/i,'');
+    document.getElementById('deck-name-input').value = stripStudyFileExtension(file.name);
   }
   updateGenerateButtonState();
 }
@@ -2287,10 +2442,77 @@ dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
 dz.addEventListener('drop', e => {
   e.preventDefault(); dz.classList.remove('drag-over');
   const f = e.dataTransfer.files[0];
-  if (f?.type === 'application/pdf') handleFileSelect(f);
+  if (!f) return;
+  if (!isSupportedStudyFile(f)) {
+    toast('Use a PDF, DOCX, or PPTX file', 'error');
+    return;
+  }
+  handleFileSelect(f);
 });
 
-// ─── PDF EXTRACTION ───────────────────────────────────────────────
+// ─── FILE EXTRACTION ──────────────────────────────────────────────
+function normalizeStudyText(text) {
+  return String(text || '').replace(/\s+/g, ' ').trim();
+}
+
+function chunkTextBlocks(blocks, targetLength = 1400) {
+  const pages = [];
+  let currentBlocks = [];
+  let currentLength = 0;
+
+  function flushCurrent() {
+    if (!currentBlocks.length) return;
+    pages.push({
+      pageNumber: pages.length + 1,
+      text: currentBlocks.join('\n\n'),
+    });
+    currentBlocks = [];
+    currentLength = 0;
+  }
+
+  blocks.forEach(block => {
+    const cleanBlock = normalizeStudyText(block);
+    if (!cleanBlock) return;
+    if (currentBlocks.length && currentLength + cleanBlock.length > targetLength) {
+      flushCurrent();
+    }
+    currentBlocks.push(cleanBlock);
+    currentLength += cleanBlock.length;
+  });
+
+  flushCurrent();
+  return pages;
+}
+
+function collectXmlText(node) {
+  const parts = [];
+
+  function walk(current) {
+    if (!current) return;
+    if (current.nodeType === Node.TEXT_NODE) {
+      const value = normalizeStudyText(current.textContent);
+      if (value) parts.push(value);
+      return;
+    }
+    if (current.nodeType !== Node.ELEMENT_NODE) return;
+    if (['tab', 'br', 'cr'].includes(current.localName)) parts.push(' ');
+    Array.from(current.childNodes || []).forEach(walk);
+  }
+
+  walk(node);
+  return normalizeStudyText(parts.join(' '));
+}
+
+function getOfficeXmlEntries(zip, pattern) {
+  return Object.keys(zip.files)
+    .filter(name => pattern.test(name))
+    .sort((a, b) => {
+      const aNum = Number((a.match(/(\d+)(?!.*\d)/) || [0, 0])[1]);
+      const bNum = Number((b.match(/(\d+)(?!.*\d)/) || [0, 0])[1]);
+      return aNum - bNum;
+    });
+}
+
 async function extractPdfContent(file) {
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
@@ -2306,23 +2528,98 @@ async function extractPdfContent(file) {
   return { text: text.trim(), pages };
 }
 
+async function extractDocxContent(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const documentEntry = zip.file('word/document.xml');
+  if (!documentEntry) {
+    throw new Error('Could not read that Word document');
+  }
+  const documentXml = await documentEntry.async('string');
+  const xml = new DOMParser().parseFromString(documentXml, 'application/xml');
+  const paragraphs = Array.from(xml.getElementsByTagName('*'))
+    .filter(node => node.localName === 'p')
+    .map(collectXmlText)
+    .filter(Boolean);
+  const pages = chunkTextBlocks(paragraphs, 1500);
+  const text = pages.map(page => page.text).join('\n');
+  if (!text) {
+    throw new Error('No readable text was found in that Word document');
+  }
+  return { text, pages, sourceLabel: 'Section' };
+}
+
+async function extractPptxContent(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+  const slideEntries = getOfficeXmlEntries(zip, /^ppt\/slides\/slide\d+\.xml$/i);
+  if (!slideEntries.length) {
+    throw new Error('Could not read that PowerPoint file');
+  }
+
+  const pages = [];
+  for (const entryName of slideEntries) {
+    const slideNumber = Number((entryName.match(/slide(\d+)\.xml/i) || [0, pages.length + 1])[1]);
+    const slideXml = await zip.file(entryName).async('string');
+    const xml = new DOMParser().parseFromString(slideXml, 'application/xml');
+    const bodyText = Array.from(xml.getElementsByTagName('*'))
+      .filter(node => node.localName === 't')
+      .map(node => normalizeStudyText(node.textContent))
+      .filter(Boolean)
+      .join(' ');
+
+    const notesEntry = zip.file(`ppt/notesSlides/notesSlide${slideNumber}.xml`);
+    let notesText = '';
+    if (notesEntry) {
+      const notesXml = await notesEntry.async('string');
+      const notesDoc = new DOMParser().parseFromString(notesXml, 'application/xml');
+      notesText = Array.from(notesDoc.getElementsByTagName('*'))
+        .filter(node => node.localName === 't')
+        .map(node => normalizeStudyText(node.textContent))
+        .filter(Boolean)
+        .join(' ');
+    }
+
+    const slideText = normalizeStudyText([bodyText, notesText].filter(Boolean).join(' '));
+    if (slideText) {
+      pages.push({ pageNumber: slideNumber, text: slideText });
+    }
+  }
+
+  const text = pages.map(page => page.text).join('\n');
+  if (!text) {
+    throw new Error('No readable text was found in that PowerPoint file');
+  }
+  return { text, pages, sourceLabel: 'Slide' };
+}
+
+async function extractStudyContent(file) {
+  const meta = getStudyFileMeta(file);
+  if (meta.kind === 'docx') return extractDocxContent(file);
+  if (meta.kind === 'pptx') return extractPptxContent(file);
+  const pdfContent = await extractPdfContent(file);
+  return { ...pdfContent, sourceLabel: 'Page' };
+}
+
 // ─── GENERATION ───────────────────────────────────────────────────
 async function startGeneration() {
   if (!pendingFile) return;
   const file = pendingFile;
-  const name = document.getElementById('deck-name-input').value.trim() || pendingFile.name.replace(/\.pdf$/i,'');
+  const name = document.getElementById('deck-name-input').value.trim() || stripStudyFileExtension(pendingFile.name);
   const folderId = document.getElementById('deck-folder-input').value;
   const fcCount = parseInt(document.getElementById('fc-count').value);
   const qqCount = parseInt(document.getElementById('qq-count').value);
   const choiceCount = parseInt(document.getElementById('choice-count').value);
   const qTypes = document.getElementById('q-types').value;
+  const instructions = readGenerationInstructions('generation-instructions');
 
   closeUploadModal();
-  _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes);
+  _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes, instructions);
 }
 
-async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes, deckIdToUpdate=null) {
-  if (!file) throw new Error('No PDF file selected.');
+async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, qTypes, instructions = '', deckIdToUpdate = null) {
+  if (!file) throw new Error('No study file selected.');
+  const sourceMeta = getStudyFileMeta(file);
   // Show loading
   state.activeDeck = null;
   document.getElementById('deck-title').textContent = 'Generating…';
@@ -2330,22 +2627,21 @@ async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, 
   document.getElementById('content').innerHTML = `
     <div class="loading-state">
       <div class="spinner"></div>
-      <p>Reading PDF…</p>
+      <p>${escHtml(sourceMeta.loadingLabel)}</p>
     </div>`;
   renderSidebar();
 
   try {
-    const { text, pages } = await extractPdfContent(file);
+    const { text, pages, sourceLabel } = await extractStudyContent(file);
     document.querySelector('.loading-state p').textContent = 'Generating study materials…';
 
-    const { flashcards, quiz } = await generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes);
+    const { flashcards, quiz } = await generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes, instructions, sourceLabel);
 
     const id = deckIdToUpdate || ('deck_' + Date.now());
     const srData = {};
     flashcards.forEach((_, i) => { srData[i] = { ease: 2.5, interval: 1, reps: 0 }; });
 
     if (deckIdToUpdate) {
-      // Preserve existing PDF text (already stored)
       const existing = state.decks[deckIdToUpdate];
       state.decks[deckIdToUpdate] = {
         ...existing,
@@ -2353,6 +2649,8 @@ async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, 
         flashcards,
         quiz,
         quizConfig: { choiceCount, qTypes },
+        customInstructions: instructions,
+        sourceLabel,
         srData,
       };
     } else {
@@ -2365,6 +2663,8 @@ async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, 
         flashcards,
         quiz,
         quizConfig: { choiceCount, qTypes },
+        customInstructions: instructions,
+        sourceLabel,
         srData,
       };
     }
@@ -2384,7 +2684,7 @@ async function _doGenerate(file, name, folderId, fcCount, qqCount, choiceCount, 
   }
 }
 
-async function generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes) {
+async function generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount, qTypes, instructions = '', sourceLabel = 'Page') {
   const resp = await fetch('/api/generate', {
     method: 'POST',
     headers: {
@@ -2397,6 +2697,8 @@ async function generateStudyMaterials(text, pages, fcCount, qqCount, choiceCount
       qqCount,
       choiceCount,
       qTypes,
+      instructions,
+      sourceLabel,
     }),
   });
 
@@ -2419,6 +2721,7 @@ function openRegenModal(deckId) {
   document.getElementById('regen-qq-val').textContent = deck.quiz?.length || 15;
   document.getElementById('regen-choice-count').value = deck.quizConfig?.choiceCount || 4;
   document.getElementById('regen-q-types').value = deck.quizConfig?.qTypes || 'mixed';
+  document.getElementById('regen-instructions').value = deck.customInstructions || '';
   document.getElementById('regen-modal').style.display = 'flex';
 }
 function closeRegenModal() {
@@ -2428,12 +2731,13 @@ function closeRegenModal() {
 async function confirmRegen() {
   if (!pendingRegenDeckId) return;
   const deck = state.decks[pendingRegenDeckId];
-  if (!deck?.text) { toast('PDF text not cached, re-upload the PDF', 'error'); closeRegenModal(); return; }
+  if (!deck?.text) { toast('Document text not cached, re-upload the source file', 'error'); closeRegenModal(); return; }
 
   const fcCount = parseInt(document.getElementById('regen-fc-count').value);
   const qqCount = parseInt(document.getElementById('regen-qq-count').value);
   const choiceCount = parseInt(document.getElementById('regen-choice-count').value);
   const qTypes = document.getElementById('regen-q-types').value;
+  const instructions = readGenerationInstructions('regen-instructions');
   closeRegenModal();
 
   document.getElementById('deck-title').textContent = 'Regenerating…';
@@ -2445,10 +2749,26 @@ async function confirmRegen() {
     </div>`;
 
   try {
-    const { flashcards, quiz } = await generateStudyMaterials(deck.text, deck.pages || [], fcCount, qqCount, choiceCount, qTypes);
+    const { flashcards, quiz } = await generateStudyMaterials(
+      deck.text,
+      deck.pages || [],
+      fcCount,
+      qqCount,
+      choiceCount,
+      qTypes,
+      instructions,
+      getDeckSourceLabel(deck),
+    );
     const srData = {};
     flashcards.forEach((_, i) => { srData[i] = { ease: 2.5, interval: 1, reps: 0 }; });
-    state.decks[pendingRegenDeckId] = { ...deck, flashcards, quiz, quizConfig: { choiceCount, qTypes }, srData };
+    state.decks[pendingRegenDeckId] = {
+      ...deck,
+      flashcards,
+      quiz,
+      quizConfig: { choiceCount, qTypes },
+      customInstructions: instructions,
+      srData,
+    };
     saveState({ immediate: true });
     selectDeck(pendingRegenDeckId);
     toast('Regenerated! ✦', 'success');
@@ -2486,9 +2806,9 @@ function renderMain() {
       <div id="welcome">
         <div class="welcome-icon">📚</div>
         <h2>Start studying smarter</h2>
-        <p>Upload a PDF to automatically generate flashcards and quizzes powered by Gemini through your private backend.</p>
+        <p>Upload a PDF, Word document, or PowerPoint to automatically generate flashcards and quizzes powered by Gemini.</p>
         <button class="btn-upload-sidebar" style="max-width:240px;" onclick="openUploadModal()">
-          <span>＋</span> Upload your first PDF
+          <span>＋</span> Upload your first file
         </button>
       </div>`;
     return;
@@ -2530,6 +2850,7 @@ function renderFlashcards(deck, container) {
     <div class="deck-header">
       <div>
         <h3>${cards.length} Flashcards</h3>
+        ${deck.customInstructions ? `<p style="margin-top:8px;color:var(--muted);font-size:13px;line-height:1.6;">Guidance: ${escHtml(shortenText(deck.customInstructions))}</p>` : ''}
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span class="stat-chip green">✓ ${known} known</span>
@@ -2538,26 +2859,27 @@ function renderFlashcards(deck, container) {
       </div>
     </div>
     <div class="cards-grid" id="cards-grid">
-      ${orderedCards.map(({ card, idx, sr: itemSr }) => renderCard(card, idx, itemSr)).join('')}
+      ${orderedCards.map(({ card, idx, sr: itemSr }) => renderCard(deck, card, idx, itemSr)).join('')}
     </div>`;
 }
 
-function renderCard(card, idx, sr) {
+function renderCard(deck, card, idx, sr) {
   const cardLanguage = getCardLanguage(idx, card);
   const definitionText = cardLanguage === 'tr' && card.definitionTr ? card.definitionTr : card.definition;
+  const sourceLabel = getDeckSourceLabel(deck).toUpperCase();
   return `
     <div class="flashcard ${isCardFlipped(idx) ? 'flipped' : ''}" id="card-${idx}" onclick="flipCard(${idx})">
       <div class="flashcard-inner">
         <div class="card-face front">
           <div class="card-label">TERM</div>
-          ${card.page ? `<div class="card-source">PAGE ${escHtml(card.page)}</div>` : ''}
+          ${card.page ? `<div class="card-source">${escHtml(sourceLabel)} ${escHtml(card.page)}</div>` : ''}
           <div class="card-term">${escHtml(card.term)}</div>
           <div class="card-flip-hint">click to reveal</div>
         </div>
         <div class="card-face back">
           <div class="card-label">DEFINITION</div>
           <div class="card-meta-row">
-            ${card.page ? `<div class="card-source">PAGE ${escHtml(card.page)}</div>` : '<div></div>'}
+            ${card.page ? `<div class="card-source">${escHtml(sourceLabel)} ${escHtml(card.page)}</div>` : '<div></div>'}
             ${card.definitionTr ? `<button class="card-translate-btn" onclick="toggleCardLanguage(event, ${idx})">${cardLanguage === 'tr' ? 'Show English' : 'Translate'}</button>` : ''}
           </div>
           <div class="card-def">${escHtml(definitionText)}</div>
