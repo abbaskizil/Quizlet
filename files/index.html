@@ -25,6 +25,7 @@
     --serif:     'Instrument Serif', serif;
     --mono:      'DM Mono', monospace;
     --sans:      'Outfit', sans-serif;
+    --sidebar-width: 260px;
   }
 
   body {
@@ -42,21 +43,55 @@
 
   /* ─── LAYOUT ─── */
   #app { display: flex; height: 100vh; overflow: hidden; }
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 39;
+  }
+  body.sidebar-open #sidebar-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
 
   /* ─── SIDEBAR ─── */
   #sidebar {
-    width: 260px;
-    min-width: 260px;
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
     background: var(--surface);
     border-right: 1px solid var(--border);
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width 0.22s ease, min-width 0.22s ease, border-color 0.22s ease;
+  }
+  #sidebar > * {
+    transition: opacity 0.16s ease;
+  }
+  body.sidebar-collapsed:not(.mobile-layout) #sidebar {
+    width: 0;
+    min-width: 0;
+    border-right-color: transparent;
+  }
+  body.sidebar-collapsed:not(.mobile-layout) #sidebar > * {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .sidebar-head {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
   }
 
   .sidebar-logo {
-    padding: 24px 20px 16px;
-    border-bottom: 1px solid var(--border);
+    min-width: 0;
   }
   .sidebar-logo h1 {
     font-family: var(--serif);
@@ -66,6 +101,11 @@
     color: var(--accent);
   }
   .sidebar-logo p { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: var(--mono); }
+  .sidebar-head-toggle {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
 
   .sidebar-section-label {
     padding: 16px 20px 8px;
@@ -199,6 +239,33 @@
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 12px;
     background: var(--surface);
+  }
+  .sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  }
+  .sidebar-toggle:hover {
+    border-color: var(--accent2);
+    background: rgba(123,97,255,0.08);
+    transform: translateY(-1px);
+  }
+  body.sidebar-open #sidebar-toggle-btn {
+    display: none;
   }
   #topbar h2 { font-family: var(--serif); font-size: 20px; font-style: italic; flex: 1; }
   #profile-panel {
@@ -558,8 +625,72 @@
     .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
+  @media (max-width: 900px) {
+    #sidebar-overlay {
+      display: block;
+    }
+    #sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 40;
+      max-width: calc(100vw - 48px);
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: 16px 0 48px rgba(0,0,0,0.35);
+    }
+    body.sidebar-open #sidebar {
+      transform: translateX(0);
+    }
+    .sidebar-head {
+      padding-right: 14px;
+    }
+    #topbar {
+      padding: 14px 16px;
+      flex-wrap: wrap;
+    }
+    #profile-panel {
+      min-width: 100%;
+      justify-content: stretch;
+    }
+    #profile-panel .profile-card {
+      width: 100%;
+      max-width: none;
+    }
+    #content {
+      padding: 20px 16px 28px;
+    }
+    .deck-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .deck-header > div:last-child {
+      width: 100%;
+      flex-wrap: wrap;
+    }
+  }
+
   @media (max-width: 760px) {
     .cards-grid { grid-template-columns: 1fr; }
+    .deck-stats,
+    .results-breakdown,
+    .results-actions,
+    .modal-actions {
+      flex-direction: column;
+    }
+    .question-card,
+    .results-card,
+    .modal {
+      padding: 24px 18px;
+    }
+    .quiz-nav {
+      justify-content: stretch;
+    }
+    .btn-next {
+      width: 100%;
+    }
   }
 </style>
 </head>
@@ -568,9 +699,15 @@
 <div id="app">
   <!-- SIDEBAR -->
   <div id="sidebar">
-    <div class="sidebar-logo">
-      <h1>StudyForge</h1>
-      <p>AI-powered study tool</p>
+    <div class="sidebar-head">
+      <button class="sidebar-toggle sidebar-head-toggle" id="sidebar-head-toggle-btn" type="button" aria-label="Close decks" onclick="toggleSidebar()">
+        <span aria-hidden="true">☰</span>
+        <span>Decks</span>
+      </button>
+      <div class="sidebar-logo">
+        <h1>StudyForge</h1>
+        <p>AI-powered study tool</p>
+      </div>
     </div>
     <div class="sidebar-section-label">Your Decks</div>
     <div id="deck-list"></div>
@@ -590,6 +727,10 @@
   <!-- MAIN -->
   <div id="main">
     <div id="topbar">
+      <button class="sidebar-toggle" id="sidebar-toggle-btn" type="button" aria-label="Open decks" aria-expanded="false" onclick="toggleSidebar()">
+        <span aria-hidden="true">☰</span>
+        <span>Decks</span>
+      </button>
       <div id="tab-buttons" style="display:none;">
         <button class="tab-btn active" onclick="switchTab('flashcards')">Flashcards</button>
         <button class="tab-btn" onclick="switchTab('quiz')">Quiz</button>
@@ -609,6 +750,7 @@
     </div>
   </div>
 </div>
+<div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
 <!-- AUTH MODAL -->
 <div class="modal-overlay" id="auth-modal" style="display:none;">
@@ -774,6 +916,7 @@ let state = {
   cardFlipped: {},
   user: null,
   authMode: 'login',
+  sidebarOpen: window.innerWidth > 900,
 };
 
 let pendingFile = null;
@@ -800,6 +943,7 @@ function persistLocalState() {
   localStorage.setItem('studyforge_ui', JSON.stringify({
     activeDeck: state.activeDeck,
     activeTab: state.activeTab,
+    sidebarOpen: state.sidebarOpen,
   }));
 }
 
@@ -812,7 +956,9 @@ function loadState() {
     const ui = JSON.parse(localStorage.getItem('studyforge_ui') || '{}');
     if (ui.activeDeck) state.activeDeck = ui.activeDeck;
     if (ui.activeTab === 'quiz' || ui.activeTab === 'flashcards') state.activeTab = ui.activeTab;
+    if (typeof ui.sidebarOpen === 'boolean') state.sidebarOpen = ui.sidebarOpen;
   } catch(e) {}
+  syncSidebarForViewport();
 }
 
 function resetDeckState() {
@@ -822,6 +968,36 @@ function resetDeckState() {
   state.quizState = null;
   state.cardLanguage = {};
   state.cardFlipped = {};
+  persistLocalState();
+}
+
+function isMobileLayout() {
+  return window.innerWidth <= 900;
+}
+
+function syncSidebarForViewport() {
+  applySidebarState();
+}
+
+function applySidebarState() {
+  const mobile = isMobileLayout();
+  document.body.classList.toggle('mobile-layout', mobile);
+  document.body.classList.toggle('sidebar-open', state.sidebarOpen);
+  document.body.classList.toggle('sidebar-collapsed', !state.sidebarOpen);
+  const toggleButtons = [
+    document.getElementById('sidebar-toggle-btn'),
+    document.getElementById('sidebar-head-toggle-btn'),
+  ];
+  toggleButtons.forEach(button => {
+    if (!button) return;
+    button.setAttribute('aria-expanded', state.sidebarOpen ? 'true' : 'false');
+    button.setAttribute('aria-label', state.sidebarOpen ? 'Close decks' : 'Open decks');
+  });
+}
+
+function toggleSidebar(force) {
+  state.sidebarOpen = typeof force === 'boolean' ? force : !state.sidebarOpen;
+  applySidebarState();
   persistLocalState();
 }
 
@@ -1182,6 +1358,10 @@ function selectDeck(id) {
   state.activeTab = 'flashcards';
   state.quizState = null;
   persistLocalState();
+  if (isMobileLayout()) {
+    state.sidebarOpen = false;
+    applySidebarState();
+  }
   renderSidebar();
   renderMain();
 }
@@ -1654,7 +1834,7 @@ function renderQuiz(deck, container) {
         <div class="q-text">${escHtml(q.question)}</div>
         ${q.type === 'mcq' ? renderMCQ(q, answered) : renderFill(q, answered)}
         <div class="feedback-row ${answered ? (answered.correct ? 'correct' : 'wrong') : ''}" id="feedback">
-          ${answered ? (answered.correct ? '✓ Correct! ' : '✗ Incorrect. ') + escHtml(q.explanation || '') : ''}
+          ${renderQuizFeedback(q, answered)}
         </div>
       </div>
       <div class="quiz-nav">
@@ -1681,11 +1861,21 @@ function renderMCQ(q, answered) {
         if (c === q.answer) cls += 'correct';
         else if (answered.selected === c) cls += 'wrong';
       }
-      return `<button class="choice-btn ${cls}" onclick="answerMCQ('${escAttr(c)}')">
+      return `<button class="choice-btn ${cls}" onclick="answerMCQ(${i})">
         <span class="choice-letter">${letters[i]}</span>${escHtml(c)}
       </button>`;
     }).join('')}
   </div>`;
+}
+
+function renderQuizFeedback(q, answered) {
+  if (!answered) return '';
+  const explanation = q.explanation ? ` ${escHtml(q.explanation)}` : '';
+  if (answered.correct) return `✓ Correct!${explanation}`;
+  if (q.type === 'mcq') {
+    return `✗ Incorrect. Correct answer: <strong style="color:var(--text)">${escHtml(q.answer)}</strong>.${explanation}`;
+  }
+  return `✗ Incorrect.${explanation}`;
 }
 
 function renderFill(q, answered) {
@@ -1712,11 +1902,13 @@ function beginQuiz() {
   renderMain();
 }
 
-function answerMCQ(choice) {
+function answerMCQ(choiceIndex) {
   const qs = state.quizState;
   if (qs.responses[qs.current]) return;
   const questionIndex = qs.queue[qs.current];
   const q = state.decks[state.activeDeck].quiz[questionIndex];
+  const choice = q.choices?.[choiceIndex];
+  if (typeof choice !== 'string') return;
   const correct = choice === q.answer;
   recordQuizAnswer(questionIndex, { selected: choice, correct });
   renderMain();
@@ -1850,6 +2042,12 @@ updateSyncStatus();
 renderAvatarGrid();
 setAuthMode('login');
 loadSession();
+window.addEventListener('resize', () => syncSidebarForViewport());
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && state.sidebarOpen && isMobileLayout()) {
+    toggleSidebar(false);
+  }
+});
 window.addEventListener('focus', () => {
   if (hasAccountSync()) pullSyncedDecks({ quiet: true, force: true });
 });
