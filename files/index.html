@@ -430,27 +430,143 @@
   }
   #topbar h2 { font-family: var(--serif); font-size: 20px; font-style: italic; flex: 1; }
   #profile-panel {
-    min-width: 220px;
     display: flex;
     justify-content: flex-end;
+    flex-shrink: 0;
   }
-  #profile-panel .profile-card {
-    width: min(100%, 260px);
-    padding: 10px 12px;
+  .profile-trigger {
+    min-width: 0;
+    max-width: 220px;
+    padding: 8px 12px;
     border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color 0.15s, transform 0.1s, background 0.15s;
   }
-  #profile-panel .profile-avatar {
+  .profile-trigger:hover {
+    border-color: var(--accent2);
+    background: rgba(123,97,255,0.08);
+    transform: translateY(-1px);
+  }
+  .profile-trigger-copy {
+    min-width: 0;
+    flex: 1;
+    text-align: left;
+  }
+  .profile-trigger-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .profile-trigger-handle {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .profile-trigger-icon {
+    color: var(--muted);
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  #profile-panel .profile-avatar,
+  .profile-preview-avatar {
     width: 38px;
     height: 38px;
     border-radius: 12px;
     font-size: 20px;
+    overflow: hidden;
   }
-  #profile-panel .profile-sub {
-    font-size: 11px;
-    margin-top: 8px;
+  .profile-avatar.photo,
+  .profile-preview-avatar.photo {
+    background: #101014;
   }
-  #profile-panel .profile-actions {
+  .profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .profile-inline-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .profile-inline-actions .btn-primary,
+  .profile-inline-actions .btn-sidebar-secondary {
+    width: auto;
+    min-width: 96px;
+  }
+  .profile-modal-layout {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 18px;
+    align-items: start;
+    margin-bottom: 20px;
+  }
+  .profile-preview-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--accent2), #2a1d8f);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+  .profile-preview-meta {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .profile-readonly {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .profile-readonly-row {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  .profile-readonly-label {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .profile-readonly-value {
+    font-size: 14px;
+    color: var(--text);
+  }
+  .profile-photo-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
     margin-top: 10px;
+  }
+  .profile-photo-actions input[type="file"] {
+    display: none;
+  }
+  .profile-photo-note {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-top: 8px;
   }
   #topbar .tab-btn {
     padding: 7px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
@@ -812,10 +928,11 @@
       flex-wrap: wrap;
     }
     #profile-panel {
-      min-width: 100%;
-      justify-content: stretch;
+      width: 100%;
+      justify-content: flex-start;
     }
-    #profile-panel .profile-card {
+    .profile-trigger,
+    .profile-inline-actions {
       width: 100%;
       max-width: none;
     }
@@ -845,6 +962,9 @@
     .results-card,
     .modal {
       padding: 24px 18px;
+    }
+    .profile-modal-layout {
+      grid-template-columns: 1fr;
     }
     .quiz-nav {
       justify-content: stretch;
@@ -951,6 +1071,67 @@
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeAuthModal()">Cancel</button>
       <button class="btn-primary" onclick="submitAuth()" id="auth-submit-btn">Sign In</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="modal-overlay" id="profile-modal" style="display:none;">
+  <div class="modal">
+    <h3>Edit Profile</h3>
+    <p class="modal-sub">Update your nickname, avatar, photo, or password</p>
+
+    <div class="profile-modal-layout">
+      <div class="profile-preview-avatar" id="profile-avatar-preview">✨</div>
+      <div class="profile-preview-meta">
+        <div class="profile-readonly">
+          <div class="profile-readonly-row">
+            <div class="profile-readonly-label">Full Name</div>
+            <div class="profile-readonly-value" id="profile-full-name"></div>
+          </div>
+          <div class="profile-readonly-row">
+            <div class="profile-readonly-label">Username</div>
+            <div class="profile-readonly-value" id="profile-username"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>NICKNAME</label>
+      <input type="text" id="profile-nickname-input" placeholder="What people should see"/>
+    </div>
+
+    <div class="form-group">
+      <label>PROFILE ICON</label>
+      <div class="avatar-grid" id="profile-avatar-grid"></div>
+      <div class="profile-photo-actions">
+        <label class="btn-secondary" for="profile-photo-input">Upload Photo</label>
+        <button class="btn-secondary" type="button" id="profile-remove-photo-btn" onclick="removeProfilePhoto()">Use Icon</button>
+        <input type="file" id="profile-photo-input" accept="image/png,image/jpeg,image/webp,image/gif,image/heif,image/heic,.heif,.heic" onchange="handleProfilePhoto(this.files[0]); this.value='';"/>
+      </div>
+      <div class="profile-photo-note">Photo upload replaces the icon until you switch back. Max 5 MB.</div>
+    </div>
+
+    <div class="form-group">
+      <label>CURRENT PASSWORD</label>
+      <input type="password" id="profile-current-password" placeholder="Required only to change password"/>
+    </div>
+
+    <div class="form-group">
+      <label>NEW PASSWORD</label>
+      <input type="password" id="profile-new-password" placeholder="Leave blank to keep current password"/>
+    </div>
+
+    <div class="form-group">
+      <label>CONFIRM NEW PASSWORD</label>
+      <input type="password" id="profile-confirm-password" placeholder="Repeat the new password"/>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="logoutUser()">Log Out</button>
+      <button class="btn-secondary" onclick="closeProfileModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveProfile()">Save Changes</button>
     </div>
   </div>
 </div>
@@ -1141,6 +1322,8 @@ let pendingRegenDeckId = null;
 let syncTimer = null;
 let syncDirty = false;
 let selectedAvatar = PROFILE_AVATARS[0];
+let selectedProfileAvatar = PROFILE_AVATARS[0];
+let selectedProfileEmoji = PROFILE_AVATARS[0];
 let deckMutationCounter = 0;
 let pendingFolderSelectId = '';
 let pendingMoveDeckId = null;
@@ -1659,43 +1842,144 @@ function chooseAvatar(event, avatar) {
   renderAvatarGrid();
 }
 
+function isImageAvatar(avatar) {
+  return /^data:image\//i.test(String(avatar || '').trim());
+}
+
+function renderAvatarMarkup(avatar, className = 'profile-avatar') {
+  if (isImageAvatar(avatar)) {
+    return `<div class="${className} photo"><img class="profile-avatar-img" src="${escAttr(avatar)}" alt="Profile photo"/></div>`;
+  }
+  return `<div class="${className}">${escHtml(avatar || '✨')}</div>`;
+}
+
+function renderProfileAvatarGrid() {
+  const grid = document.getElementById('profile-avatar-grid');
+  if (!grid) return;
+  grid.innerHTML = PROFILE_AVATARS.map(avatar => `
+    <button class="avatar-option ${!isImageAvatar(selectedProfileAvatar) && avatar === selectedProfileAvatar ? 'selected' : ''}" onclick="chooseProfileAvatar(event, '${avatar}')">${avatar}</button>
+  `).join('');
+}
+
+function chooseProfileAvatar(event, avatar) {
+  event.preventDefault();
+  selectedProfileEmoji = avatar;
+  selectedProfileAvatar = avatar;
+  renderProfileAvatarGrid();
+  updateProfileAvatarPreview();
+}
+
+function updateProfileAvatarPreview() {
+  const preview = document.getElementById('profile-avatar-preview');
+  if (preview) {
+    preview.className = `profile-preview-avatar${isImageAvatar(selectedProfileAvatar) ? ' photo' : ''}`;
+    preview.innerHTML = isImageAvatar(selectedProfileAvatar)
+      ? `<img class="profile-avatar-img" src="${escAttr(selectedProfileAvatar)}" alt="Profile photo"/>`
+      : escHtml(selectedProfileAvatar || '✨');
+  }
+  const removeBtn = document.getElementById('profile-remove-photo-btn');
+  if (removeBtn) removeBtn.disabled = !isImageAvatar(selectedProfileAvatar);
+}
+
+function handleProfilePhoto(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    toast('Choose an image file', 'error');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast('Photo must be 5 MB or smaller', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    selectedProfileAvatar = String(reader.result || '');
+    renderProfileAvatarGrid();
+    updateProfileAvatarPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeProfilePhoto() {
+  selectedProfileAvatar = selectedProfileEmoji || PROFILE_AVATARS[0];
+  renderProfileAvatarGrid();
+  updateProfileAvatarPreview();
+}
+
 function renderProfilePanel() {
   const panel = document.getElementById('profile-panel');
   if (!panel) return;
 
   if (!state.user) {
     panel.innerHTML = `
-      <div class="profile-card">
-        <div class="profile-head">
-          <div class="profile-avatar">✨</div>
-          <div>
-            <div class="profile-name">Account Required</div>
-            <div class="profile-handle">Sign in to start studying</div>
-          </div>
-        </div>
-        <div class="profile-sub">Your decks sync automatically across devices after you sign in.</div>
-        <div class="profile-actions">
-          <button class="btn-primary" onclick="openAuthModal('register')">Join</button>
-          <button class="btn-sidebar-secondary" onclick="openAuthModal('login')">Sign In</button>
-        </div>
+      <div class="profile-inline-actions">
+        <button class="btn-primary" onclick="openAuthModal('register')">Join</button>
+        <button class="btn-sidebar-secondary" onclick="openAuthModal('login')">Sign In</button>
       </div>`;
     return;
   }
 
   panel.innerHTML = `
-    <div class="profile-card">
-      <div class="profile-head">
-        <div class="profile-avatar">${escHtml(state.user.avatar)}</div>
-        <div>
-          <div class="profile-name">${escHtml(state.user.displayName)}</div>
-          <div class="profile-handle">@${escHtml(state.user.username)}</div>
-        </div>
+    <button class="profile-trigger" type="button" onclick="openProfileModal()">
+      ${renderAvatarMarkup(state.user.avatar)}
+      <div class="profile-trigger-copy">
+        <div class="profile-trigger-name">${escHtml(state.user.displayName)}</div>
+        <div class="profile-trigger-handle">@${escHtml(state.user.username)}</div>
       </div>
-      <div class="profile-sub">Deck sync is attached to this account on every device you sign into.</div>
-      <div class="profile-actions">
-        <button class="btn-sidebar-secondary" onclick="logoutUser()">Log Out</button>
-      </div>
-    </div>`;
+      <div class="profile-trigger-icon">⚙</div>
+    </button>`;
+}
+
+function openProfileModal() {
+  if (!state.user) return;
+  document.getElementById('profile-full-name').textContent = `${state.user.firstName} ${state.user.lastName}`.trim();
+  document.getElementById('profile-username').textContent = `@${state.user.username}`;
+  document.getElementById('profile-nickname-input').value = state.user.nickname || '';
+  document.getElementById('profile-current-password').value = '';
+  document.getElementById('profile-new-password').value = '';
+  document.getElementById('profile-confirm-password').value = '';
+  selectedProfileAvatar = state.user.avatar || PROFILE_AVATARS[0];
+  selectedProfileEmoji = PROFILE_AVATARS.includes(selectedProfileAvatar) ? selectedProfileAvatar : PROFILE_AVATARS[0];
+  renderProfileAvatarGrid();
+  updateProfileAvatarPreview();
+  document.getElementById('profile-modal').style.display = 'flex';
+}
+
+function closeProfileModal() {
+  const modal = document.getElementById('profile-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function saveProfile() {
+  if (!state.user) return;
+  const nickname = document.getElementById('profile-nickname-input').value.trim();
+  const currentPassword = document.getElementById('profile-current-password').value;
+  const newPassword = document.getElementById('profile-new-password').value;
+  const confirmPassword = document.getElementById('profile-confirm-password').value;
+  if (newPassword && newPassword !== confirmPassword) {
+    toast('New passwords do not match', 'error');
+    return;
+  }
+
+  const resp = await fetch('/api/auth/profile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nickname,
+      avatar: selectedProfileAvatar,
+      currentPassword,
+      newPassword,
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    toast(data.error?.message || 'Could not update profile', 'error');
+    return;
+  }
+  state.user = data.user;
+  renderProfilePanel();
+  closeProfileModal();
+  toast('Profile updated', 'success');
 }
 
 function setAuthMode(mode) {
@@ -1793,6 +2077,7 @@ async function finishAuth(user, toastMessage) {
 
 async function logoutUser() {
   await fetch('/api/auth/logout', { method: 'POST' });
+  closeProfileModal();
   state.user = null;
   syncDirty = false;
   setSyncUpdatedAt(null);

@@ -13,6 +13,7 @@ const DATABASE_URL = process.env.DATABASE_URL || '';
 const SYNC_DB_PATH = process.env.SYNC_DB_PATH || path.join(__dirname, 'data', 'studyforge.sqlite');
 const SESSION_COOKIE = 'studyforge_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+const MAX_REQUEST_BODY_BYTES = 8_000_000;
 
 const dataStorePromise = initDataStore();
 
@@ -57,6 +58,10 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'POST' && url.pathname === '/api/auth/login') {
       return handleLogin(req, res);
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/auth/profile') {
+      return handleProfileUpdate(req, res);
     }
 
     if (req.method === 'POST' && url.pathname === '/api/auth/logout') {
@@ -376,6 +381,54 @@ async function handleLogout(req, res) {
   });
 }
 
+async function handleProfileUpdate(req, res) {
+  const session = await requireOptionalSession(req);
+  if (!session?.user) {
+    return sendJson(res, 401, { error: { message: 'Sign in required.' } });
+  }
+
+  let body;
+  try {
+    body = JSON.parse(await readBody(req));
+  } catch {
+    return sendJson(res, 400, { error: { message: 'Invalid JSON body.' } });
+  }
+
+  const update = normalizeProfileUpdatePayload(body);
+  if (!update.ok) {
+    return sendJson(res, 400, { error: { message: update.message } });
+  }
+
+  if (update.newPassword) {
+    const currentHash = session.user.password_hash || session.user.passwordHash;
+    if (!verifyPassword(update.currentPassword, currentHash)) {
+      return sendJson(res, 401, { error: { message: 'Current password is incorrect.' } });
+    }
+  }
+
+  const dataStore = await dataStorePromise;
+  const userId = getUserId(session.user);
+  await dataStore.updateUserProfile(
+    userId,
+    update.nickname,
+    update.avatar
+  );
+
+  if (update.newPassword) {
+    await dataStore.updateUserPassword(userId, hashPassword(update.newPassword));
+  }
+
+  const updatedUser = await dataStore.getUserById(userId);
+  sendJson(res, 200, {
+    ok: true,
+    user: buildPublicUser(updatedUser || {
+      ...session.user,
+      nickname: update.nickname,
+      avatar: update.avatar,
+    }),
+  });
+}
+
 function buildResponseSchema() {
   return {
     type: 'OBJECT',
@@ -603,7 +656,7 @@ function readBody(req) {
     req.setEncoding('utf8');
     req.on('data', chunk => {
       body += chunk;
-      if (body.length > 2_000_000) {
+      if (body.length > MAX_REQUEST_BODY_BYTES) {
         reject(new Error('Request body too large'));
         req.destroy();
       }
@@ -709,6 +762,9 @@ async function initSqliteStore() {
     async findUserByUsername(username) {
       return database.prepare('SELECT * FROM users WHERE username = ?').get(username) || null;
     },
+    async getUserById(userId) {
+      return database.prepare('SELECT * FROM users WHERE user_id = ?').get(userId) || null;
+    },
     async createUser(user) {
       database.prepare(`
         INSERT INTO users (
@@ -757,6 +813,20 @@ async function initSqliteStore() {
         SET decks_json = ?, decks_updated_at = ?
         WHERE user_id = ?
       `).run(decksJson, updatedAt, userId);
+    },
+    async updateUserProfile(userId, nickname, avatar) {
+      database.prepare(`
+        UPDATE users
+        SET nickname = ?, avatar = ?
+        WHERE user_id = ?
+      `).run(nickname, avatar, userId);
+    },
+    async updateUserPassword(userId, passwordHash) {
+      database.prepare(`
+        UPDATE users
+        SET password_hash = ?
+        WHERE user_id = ?
+      `).run(passwordHash, userId);
     },
   };
 }
@@ -821,6 +891,10 @@ async function initPostgresStore() {
       const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
       return result.rows[0] || null;
     },
+    async getUserById(userId) {
+      const result = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+      return result.rows[0] || null;
+    },
     async createUser(user) {
       await pool.query(`
         INSERT INTO users (
@@ -874,6 +948,20 @@ async function initPostgresStore() {
         WHERE user_id = $3
       `, [decksJson, updatedAt, userId]);
     },
+    async updateUserProfile(userId, nickname, avatar) {
+      await pool.query(`
+        UPDATE users
+        SET nickname = $1, avatar = $2
+        WHERE user_id = $3
+      `, [nickname, avatar, userId]);
+    },
+    async updateUserPassword(userId, passwordHash) {
+      await pool.query(`
+        UPDATE users
+        SET password_hash = $1
+        WHERE user_id = $2
+      `, [passwordHash, userId]);
+    },
   };
 }
 
@@ -910,7 +998,7 @@ function normalizeUserPayload(body) {
   const lastName = String(body.lastName || '').trim();
   const username = normalizeUsername(body.username);
   const nickname = String(body.nickname || '').trim();
-  const avatar = String(body.avatar || '').trim();
+  const avatar = normalizeAvatarValue(body.avatar);
   const password = String(body.password || '');
 
   if (!firstName || !lastName) return { ok: false, message: 'Name and surname are required.' };
@@ -928,6 +1016,48 @@ function normalizeUserPayload(body) {
     avatar,
     password,
   };
+}
+
+function normalizeProfileUpdatePayload(body) {
+  const nickname = String(body.nickname || '').trim();
+  const avatar = normalizeAvatarValue(body.avatar);
+  const currentPassword = String(body.currentPassword || '');
+  const newPassword = String(body.newPassword || '');
+
+  if (nickname.length > 32) {
+    return { ok: false, message: 'Nickname must be 32 characters or fewer.' };
+  }
+  if (!avatar) {
+    return { ok: false, message: 'Choose a profile icon or photo.' };
+  }
+  if (newPassword) {
+    if (!currentPassword) {
+      return { ok: false, message: 'Current password is required to set a new password.' };
+    }
+    if (newPassword.length < 6) {
+      return { ok: false, message: 'New password must be at least 6 characters.' };
+    }
+  }
+
+  return {
+    ok: true,
+    nickname,
+    avatar,
+    currentPassword,
+    newPassword,
+  };
+}
+
+function normalizeAvatarValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (isSafeImageDataUrl(raw)) return raw;
+  if (raw.length > 16) return '';
+  return raw;
+}
+
+function isSafeImageDataUrl(value) {
+  return /^data:image\/(?:png|jpeg|jpg|webp|gif|heif|heic);base64,[a-z0-9+/=]+$/i.test(value) && value.length <= 7500000;
 }
 
 function buildPublicUser(user) {
